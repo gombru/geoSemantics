@@ -2,6 +2,11 @@ import urllib
 import cStringIO
 from joblib import Parallel, delayed
 from PIL import Image
+import os
+
+# Downloads images from the created annotations file using Flickr static urls
+# Resizes images so that their shorter size is 300px
+# If an image already exist in the destination folder, it ignores it
 
 def resize(im, minSize):
     w = im.size[0]
@@ -16,22 +21,49 @@ def resize(im, minSize):
     return im
 
 def download_save_image(id, url):
-    img = cStringIO.StringIO(urllib.urlopen(url).read())
-    img = resize(img, 300)
-    image_path = dest_path + str(id) + '.jpg'
-    img.save(image_path)
+    try:
+        if id in existing_ids:
+            return
+        img = Image.open(cStringIO.StringIO(urllib.urlopen(url).read()))
+        img = resize(img, 300)
+        image_path = dest_path + str(id) + '.jpg'
+        img.save(image_path)
+    except:
+        print("Error with image")
+    #print("Done")
+
+
+
+dest_path = "/home/Imatge/hd/datasets/YFCC100M/img/"
+
+# Read existing files
+print("Reading existing files ids")
+existing_ids = []
+for filename in os.listdir(dest_path):
+    id = int(filename.split('/')[-1].split('.')[0])
+    existing_ids.append(id)
+
+print("Num existing files: " + str(len(existing_ids)))
 
 # Read anns
 print("Reading anns")
 ann_file = open("anns_gombru.txt")
-dest_path = "home/Imatge/hd/datasets/YFCC100M/img/"
+
 to_download = {}
+c=0
 for line in ann_file:
+    if c%1000000 == 0: print(c)
+    # if c == 1000: break
+    c+=1
     data = line.split(';')
-    id = data[0]
+    id = int(data[0])
+    # if id in existing_ids:
+    #     continue
     url = data[-1]
     to_download[id] = url
 
+# print("Files to be downloaded: " + str(len(to_download)))
+
 print("Downloading")
-Parallel(n_jobs=32)(delayed(download_save_image)(id, url) for id, url in to_download.iteritems())
+Parallel(n_jobs=64)(delayed(download_save_image)(id, url) for id, url in to_download.iteritems())
 print("DONE")

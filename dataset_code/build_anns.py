@@ -1,6 +1,12 @@
-# First read the places metadata
-# Select only the images with places metadata (48M)
-# Store their metadata in a dict
+
+
+# DEPRECATED: Doesn't get Geolocation
+
+# Reads the places metadata from YFCC100M
+# Selects only the images with places metadata (48M)
+# Stores the image and location information in a txt file in the following format:
+# id;[tag1,tag2,...];country;town;url
+
 
 out_file = open("anns_gombru.txt",'w')
 
@@ -13,7 +19,7 @@ num_towns = 0
 c = 0
 for line in places_file:
     c+=1
-    if c%2000000 == 0: print c
+    if c%2000000 == 0: print(c)
     # if c == 100000: break
     metadata = line.split(',')
     if len(metadata) < 2:
@@ -57,7 +63,7 @@ selected=0
 c = 0
 for line in dataset_file:
     c+=1
-    if c%2000000 == 0: print c
+    if c%2000000 == 0: print(c)
     # if c == 100000: break
     metadata = line.split('\t')
     # print(metadata)
