@@ -28,12 +28,12 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
         tag_neg_var = torch.autograd.Variable(tag_neg)
 
         # compute output
-        output = model(image_var, tag_pos_var, tag_neg_var)
-        loss = criterion(output, target_var)
+        i_e, tp_e, tn_e, correct = model(image_var, tag_pos_var, tag_neg_var)
+        loss = criterion(i_e, tp_e, tn_e)
 
         # measure and record loss
         loss_meter.update(loss.data.item(), image.size()[0])
-        correct_triplets.update(batch_correct_triplets, image.size()[0])
+        correct_triplets.update(torch.sum(correct))
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
@@ -81,13 +81,13 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
             tag_neg_var = torch.autograd.Variable(tag_neg)
 
             # compute output
-            output = model(image_var, tag_pos, tag_neg)
-            loss = criterion(output, target_var)
+            i_e, tp_e, tn_e, correct = model(image_var, tag_pos_var, tag_neg_var)
+            loss = criterion(i_e, tp_e, tn_e)
 
             # measure and record loss
             # prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
             loss_meter.update(loss.data.item(), image.size()[0])
-            correct_triplets.update(batch_correct_triplets, image.size()[0])
+            correct_triplets.update(torch.sum(correct))
 
             # measure elapsed time
             batch_time.update(time.time() - end)

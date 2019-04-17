@@ -5,7 +5,7 @@ from torch.utils.data import Dataset, DataLoader
 import image_processing
 from PIL import Image
 import random
-from gensim.models import Word2Vec
+from gensim.models.keyedvectors import KeyedVectors
 
 class YFCC_Dataset(Dataset):
 
@@ -17,8 +17,8 @@ class YFCC_Dataset(Dataset):
         self.mirror = mirror
 
         # Load GenSim Word2Vec model
-        text_model_path = root_dir + 'GoogleNews-vectors-negative300.bin'
-        self.text_model = Word2Vec.load(text_model_path, binary=True)
+        text_model_path = '../../../ssd2/YFCC100M/text_models/gensim_glove840B300d_vectors.txt'
+        self.text_model = KeyedVectors.load_word2vec_format(text_model_path, binary=False, unicode_errors='ignore')
 
         # Count number of elements
         self.num_elements = sum(1 for line in open(root_dir + 'splits/' + split))
@@ -87,11 +87,12 @@ class YFCC_Dataset(Dataset):
 
         # Select a negative tag
         # --> Random negative: Random tag from random image
-        negative_img = random.randint(0, self.num_elements)
+        while True:
+            negative_img_idx = random.randint(0, self.num_elements)
+            tag_neg = random.choice(self.tags[negative_img_idx])
+            if tag_neg not in self.tags[idx]:
+                break
         tag_neg_embedding = self.__getwordembedding__(tag_neg)
-
-
-
 
         # Build tensors
         img_tensor = torch.from_numpy(np.copy(im_np))

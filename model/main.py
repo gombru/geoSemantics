@@ -4,14 +4,18 @@ import torch.utils.data
 import torch.utils.data.distributed
 import YFCC_Dataset
 import train
-import model
+import Model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Config
-training_id = 'YFCC_triplet_Img2Hash_e1024_m01_randomNeg'
+training_id = 'YFCC_triplet_Img2Hash_e1024_m1_randomNeg'
 dataset = '../../../hd/datasets/YFCC100M/'
 split_train = 'train_hate.txt'
 split_val = 'val.txt'
+
+margin = 1
+norm_degree = 2 # The norm degree for pairwise distance
+embedding_dims= 1024
 
 ImgSize = 224
 gpus = [0]
@@ -30,11 +34,11 @@ best_loss = 1000
 # Optimizer
 optimizer_name = 'ADAM'
 lr = 1e-6
-optimizer = torch.optim.Adam(lr = lr)
+optimizer = torch.optim.Adam(lr=lr)
 # Loss
-criterion = nn.CrossEntropyLoss().cuda(gpu)
+criterion = nn.TripletMarginLoss(margin=margin, p=norm_degree).cuda(gpu)
 # Model
-model = model.img_hash(gpu=gpu)
+model = Model.Model(gpu=gpu, embedding_dims=embedding_dims, margin=margin, norm_degree=norm_degree)
 model = torch.nn.DataParallel(model, device_ids=gpus).cuda(gpu)
 
 

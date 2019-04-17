@@ -1,6 +1,6 @@
 # Create train, val and test splits
 
-ann_file = open("../../../ssd2/YFCC100M/anns_geo_gombru.txt")
+ann_file = open("../../../ssd2/YFCC100M/anns_geo_filtered_gombru.txt")
 
 train_file = open("../../../ssd2/YFCC100M/splits/train.txt","w")
 val_file = open("../../../ssd2/YFCC100M/splits/val.txt","w")

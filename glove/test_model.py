@@ -1,8 +1,8 @@
 from gensim.models.keyedvectors import KeyedVectors
 
-model_path = '../../../ssd2/YMCC100M/text_models/GoogleNews-vectors-negative300.bin'
+model_path = '../../../ssd2/YFCC100M/text_models/gensim_glove840B300d_vectors.txt'
 
-model = KeyedVectors.load_word2vec_format(model_path, binary=True)
+model = KeyedVectors.load_word2vec_format(model_path, binary=False, unicode_errors='ignore')
 
 print(model.most_similar(positive=['amusement']))
 print(model.most_similar(positive=['tree']))
