@@ -7,7 +7,7 @@ import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
 
-def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu):
+def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     loss_meter = AverageMeter()
@@ -22,13 +22,12 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
         # measure data loading time
         data_time.update(time.time() - end)
 
-        target = target.cuda(gpu, async=True)
         image_var = torch.autograd.Variable(image)
         tag_pos_var = torch.autograd.Variable(tag_pos)
         tag_neg_var = torch.autograd.Variable(tag_neg)
 
         # compute output
-        i_e, tp_e, tn_e, correct = model(image_var, tag_pos_var, tag_neg_var)
+        i_e, tp_e, tn_e, correct = model(image_var, tag_pos_var, tag_neg_var, lat, lon)
         loss = criterion(i_e, tp_e, tn_e)
 
         # measure and record loss
@@ -46,13 +45,12 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
 
         if i % print_freq == 0:
             print('Epoch: [{0}][{1}/{2}]\t'
-                  'GPU: {gpu}\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Correct Triplets {correct_triplets.val.data[0]:.3f} ({correct_triplets.avg.data[0]:.3f})\t'
+                  'Correct Triplets {correct_triplets.val:.3f} ({correct_triplets.avg:.3f})\t'
                   .format(
-                   epoch, i, len(train_loader), gpu=str(gpu), batch_time=batch_time,
+                   epoch, i, len(train_loader), batch_time=batch_time,
                    data_time=data_time, loss=loss_meter, correct_triplets=correct_triplets))
 
     plot_data['train_loss'][plot_data['epoch']] = loss_meter.avg
@@ -62,7 +60,7 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
     return plot_data
 
 
-def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
+def validate(val_loader, model, criterion, print_freq, plot_data):
     with torch.no_grad():
 
         batch_time = AverageMeter()
@@ -75,13 +73,12 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
         end = time.time()
         for i, (image, tag_pos, tag_neg, lat, lon) in enumerate(val_loader):
 
-            target = target.cuda(gpu, async=True)
             image_var = torch.autograd.Variable(image)
             tag_pos_var = torch.autograd.Variable(tag_pos)
             tag_neg_var = torch.autograd.Variable(tag_neg)
 
             # compute output
-            i_e, tp_e, tn_e, correct = model(image_var, tag_pos_var, tag_neg_var)
+            i_e, tp_e, tn_e, correct = model(image_var, tag_pos_var, tag_neg_var, lat, lon)
             loss = criterion(i_e, tp_e, tn_e)
 
             # measure and record loss
@@ -97,7 +94,7 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
                 print('Test: [{0}/{1}]\t'
                       'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                       'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                      'Correct Triplets {correct_triplets.val.data[0]:.3f} ({correct_triplets.avg.data[0]:.3f})'.format(
+                      'Correct Triplets {correct_triplets.val:.3f} ({correct_triplets.avg:.3f})'.format(
                        i, len(val_loader), batch_time=batch_time, loss=loss_meter,
                        correct_triplets=correct_triplets))
 

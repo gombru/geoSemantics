@@ -2,15 +2,15 @@ import torch.nn as nn
 import torch.backends.cudnn as cudnn
 import torch.utils.data
 import torch.utils.data.distributed
-import YFCC_Dataset
+import YFCC_dataset
 import train
-import Model
+import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Config
 training_id = 'YFCC_triplet_Img2Hash_e1024_m1_randomNeg'
 dataset = '../../../hd/datasets/YFCC100M/'
-split_train = 'train_hate.txt'
+split_train = 'train.txt'
 split_val = 'val.txt'
 
 margin = 1
@@ -18,13 +18,13 @@ norm_degree = 2 # The norm degree for pairwise distance
 embedding_dims= 1024
 
 ImgSize = 224
-gpus = [0]
-gpu = 0
-workers = 8 # Num of data loading workers
+gpus = [3,2,1,0]
+gpu = 3
+workers = 12 # Num of data loading workers
 epochs = 301
 start_epoch = 0 # Useful on restarts
-batch_size = 64  # Batch size
-print_freq = 25
+batch_size = 100 * len(gpus) # Batch size
+print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
 resume = None  # Path to checkpoint top resume training
 plot = True
 best_epoch = 0
@@ -33,14 +33,14 @@ best_loss = 1000
 
 # Optimizer
 optimizer_name = 'ADAM'
-lr = 1e-6
-optimizer = torch.optim.Adam(lr=lr)
+lr = 2 * len(gpus) * 1e-6
 # Loss
 criterion = nn.TripletMarginLoss(margin=margin, p=norm_degree).cuda(gpu)
 # Model
-model = Model.Model(gpu=gpu, embedding_dims=embedding_dims, margin=margin, norm_degree=norm_degree)
-model = torch.nn.DataParallel(model, device_ids=gpus).cuda(gpu)
+model = model.Model(embedding_dims=embedding_dims, margin=margin, norm_degree=norm_degree).cuda(gpu)
+model = torch.nn.DataParallel(model, device_ids=gpus)
 
+optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 # Optionally resume from a checkpoint
 if resume:
@@ -53,10 +53,10 @@ if resume:
 cudnn.benchmark = True
 
 # Data loading code
-train_dataset = YFCC_Dataset.YFCC_Dataset(
+train_dataset = YFCC_dataset.YFCC_Dataset(
     dataset,split_train,random_crop=ImgSize,mirror=True)
 
-val_dataset = YFCC_Dataset.YFCC_Dataset(
+val_dataset = YFCC_dataset.YFCC_Dataset(
     dataset, split_val,random_crop=ImgSize,mirror=False)
 
 train_loader = torch.utils.data.DataLoader(
@@ -76,22 +76,23 @@ plot_data['epoch'] = 0
 it_axes = arange(epochs)
 _, ax1 = subplots()
 ax2 = ax1.twinx()
-ax1.set_xlabel('epoch ' + " (GPU " + str(gpu) +") ")
+ax1.set_xlabel('epoch')
 ax1.set_ylabel('train loss (r), val loss (y)')
 ax2.set_ylabel('train correct triplets (b), val correct triplets (g)')
 ax2.set_autoscaley_on(False)
-ax1.set_ylim([0, 100])
+ax1.set_ylim([0, 1])
 ax2.set_ylim([0, batch_size])
 
+print("Dataset and model ready. Starting training ...")
 
 for epoch in range(start_epoch, epochs):
     plot_data['epoch'] = epoch
 
     # Train for one epoch
-    plot_data = train.train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu)
+    plot_data = train.train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data)
 
     # Evaluate on validation set
-    plot_data = train.validate(val_loader, model, criterion, print_freq, plot_data, gpu)
+    plot_data = train.validate(val_loader, model, criterion, print_freq, plot_data)
 
     # Remember best model and save checkpoint
     is_best = plot_data['val_loss'][epoch] < best_loss

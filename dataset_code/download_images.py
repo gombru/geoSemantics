@@ -47,7 +47,7 @@ print("Num existing files: " + str(len(existing_ids)))
 
 # Read anns
 print("Reading anns")
-ann_file = open("anns_gombru.txt")
+ann_file = open("/home/Imatge/ssd2/YFCC100M/anns_gombru.txt")
 
 to_download = {}
 c=0

@@ -108,7 +108,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = nn.AvgPool2d(7, stride=1)
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.fc_custom = nn.Linear(512 * block.expansion, num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -148,7 +148,7 @@ class ResNet(nn.Module):
 
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = self.fc(x)
+        x = self.fc_custom(x)
 
         return x
 
@@ -185,7 +185,7 @@ def resnet50(pretrained=False, **kwargs):
     """
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet50']))
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet50']), strict=False)
     return model
 
 

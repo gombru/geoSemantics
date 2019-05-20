@@ -4,8 +4,9 @@ import numpy as np
 from torch.utils.data import Dataset, DataLoader
 import image_processing
 from PIL import Image
+import json
 import random
-from gensim.models.keyedvectors import KeyedVectors
+# from gensim.models.keyedvectors import KeyedVectors
 
 class YFCC_Dataset(Dataset):
 
@@ -17,11 +18,17 @@ class YFCC_Dataset(Dataset):
         self.mirror = mirror
 
         # Load GenSim Word2Vec model
-        text_model_path = '../../../ssd2/YFCC100M/text_models/gensim_glove840B300d_vectors.txt'
-        self.text_model = KeyedVectors.load_word2vec_format(text_model_path, binary=False, unicode_errors='ignore')
+        print("Loading textual model ...")
+        # text_model_path = '../../../ssd2/YFCC100M/text_models/gensim_glove840B300d_vectors.txt'
+        # self.text_model = KeyedVectors.load_word2vec_format(text_model_path, binary=False, unicode_errors='ignore')
+        text_model_path = '../../../ssd2/YFCC100M/vocab/vocab_100k.json'
+        self.text_model = json.load(open(text_model_path))
+        print("Vocabulary size: " + str(len(self.text_model)))
 
         # Count number of elements
-        self.num_elements = sum(1 for line in open(root_dir + 'splits/' + split))
+        print("Opening dataset ...")
+        self.num_elements = sum(1 for line in open('../../../ssd2/YFCC100M/splits/' + split))
+        # self.num_elements = 5000
         print("Number of elements in " + split + ": " + str(self.num_elements))
 
         # Initialize containers
@@ -31,24 +38,26 @@ class YFCC_Dataset(Dataset):
         self.longitudes = np.empty(self.num_elements, dtype=np.float32)
 
         # Read data
-        print("Reasing data ...")
-        for i,line in enumerate(open(root_dir + 'splits/' + split)):
+        print("Reading data ...")
+        for i,line in enumerate(open('../../../ssd2/YFCC100M/splits/' + split)):
+            if i % 2000000 == 0 and i != 0: print(i)
+            # if i == 5000: break
             data = line.split(';')
             self.img_ids[i] = int(data[0])
             tags_array = data[1].split(',')
-            self.tags[i].append(tags_array)
+            self.tags.append(tags_array)
             self.latitudes[i] = float(data[4])
             self.longitudes[i] = float(data[5])
 
-        print("Data read.")
+        print("Data read. Set size: " + str(len(self.tags)) )
 
 
     def __len__(self):
-        return len(self.tweet_ids)
+        return len(self.img_ids)
 
     def __getwordembedding__(self, tag):
         tag = tag.lower()
-        tag_embedding = self.text_model[tag]
+        tag_embedding = np.asarray(self.text_model[tag], dtype=np.float32)
         return tag_embedding
 
 
@@ -59,13 +68,13 @@ class YFCC_Dataset(Dataset):
         try:
             image = Image.open(img_name)
         except:
-            new_img_name = '{}{}/{}{}'.format(self.root_dir, 'img', '000', '.jpg')
+            new_img_name = '{}{}/{}{}'.format(self.root_dir, 'img', '6985418911', '.jpg')
             print("Img file " + img_name + " not found, using hardcoded " + new_img_name)
             image = Image.open(new_img_name)
 
         try:
             if self.random_crop != 0:
-                image = image_processing.RandomCrop(image,self.RandomCrop)
+                image = image_processing.RandomCrop(image,self.random_crop)
             if self.mirror:
                 image = image_processing.Mirror(image)
             im_np = np.array(image, dtype=np.float32)
@@ -73,11 +82,11 @@ class YFCC_Dataset(Dataset):
 
         except:
             print("Error in data aumentation with image " + img_name)
-            new_img_name = '{}{}/{}{}'.format(self.root_dir, 'img', '000', '.jpg')
+            new_img_name = '{}{}/{}{}'.format(self.root_dir, 'img', '6985418911', '.jpg')
             print("Using hardcoded: " + new_img_name)
             image = Image.open(new_img_name)
             if self.random_crop != 0:
-                image = image_processing.RandomCrop(image,self.RandomCrop)
+                image = image_processing.RandomCrop(image,self.random_crop)
             im_np = np.array(image, dtype=np.float32)
             im_np = image_processing.PreprocessImage(im_np)
 
@@ -88,7 +97,7 @@ class YFCC_Dataset(Dataset):
         # Select a negative tag
         # --> Random negative: Random tag from random image
         while True:
-            negative_img_idx = random.randint(0, self.num_elements)
+            negative_img_idx = random.randint(0, self.num_elements - 1)
             tag_neg = random.choice(self.tags[negative_img_idx])
             if tag_neg not in self.tags[idx]:
                 break

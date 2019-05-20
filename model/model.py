@@ -1,19 +1,19 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import myResNet50
+import MyResNet
 import math
 
 class Model(nn.Module):
 
-    def __init__(self, gpu=0, embedding_dims=1024, margin=1, norm_degree=2):
+    def __init__(self, embedding_dims=1024, margin=1, norm_degree=2):
         super(Model, self).__init__()
         self.c={}
         self.c['embedding_dims'] = embedding_dims
         self.c['margin'] = margin
         self.c['norm_degree'] = norm_degree
-        self.c['gpu'] = gpu
-        self.cnn = MyResNet.resnet50(pretrained=True, num_classes=c['embedding_dims'])
-        self.extra_net = TextNet()
+        self.cnn = MyResNet.resnet50(pretrained=True, num_classes=self.c['embedding_dims'])
+        self.extra_net = TextNet(self.c)
         self.initialize_weights()
 
     def forward(self, image, tag_pos, tag_neg, lat, lon):
@@ -22,12 +22,14 @@ class Model(nn.Module):
         tp_e = self.extra_net(tag_pos)
         tn_e = self.extra_net(tag_neg)
 
-        # Check if triplet is already correct (not used for the loss, just to track them)
-        correct = 0
-        d_i_tp = F.pairwise_distance(i_e, tp_e)
-        d_i_tn = F.pairwise_distance(i_e, tn_e)
-        if (d_i_tn - d_i_tp) > self.c['margin']:
-            correct = 1
+        # Check if triplet is already correct (not used for the loss, just for monitoring)
+        correct = torch.zeros([1], dtype=torch.int32).cuda()
+        d_i_tp = F.pairwise_distance(i_e, tp_e, p=self.c['norm_degree'])
+        d_i_tn = F.pairwise_distance(i_e, tn_e, p=self.c['norm_degree'])
+
+        for i in range(0,len(d_i_tp)):
+            if (d_i_tn[i] - d_i_tp[i]) > self.c['margin']:
+                correct[0] += 1
 
         return i_e, tp_e, tn_e, correct
 
@@ -50,11 +52,11 @@ class Model(nn.Module):
 
 class TextNet(nn.Module):
 
-    def __init__(self):
+    def __init__(self, c):
         super(TextNet, self).__init__()
 
         self.fc1 = BasicFC(300, 512)
-        self.fc2 = BasicFC(512, self.c['embedding_dims'])
+        self.fc2 = BasicFC(512, c['embedding_dims'])
 
 
     def forward(self, tag):

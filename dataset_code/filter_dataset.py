@@ -1,10 +1,12 @@
 import json
 from gensim.models.keyedvectors import KeyedVectors
 
-in_file = open("../../../ssd2/YFCC100M/anns_geo_gombru.txt",'r')
-out_vocab = open("../../../ssd2/YFCC100M/vocab_words_100k.txt",'w')
-out_vocab_embeddings = open("../../../ssd2/YFCC100M/vocab_100k.json",'w')
-out_file = open("../../../ssd2/YFCC100M/anns_geo_filtered_gombru.txt",'w')
+in_file = open("../../../datasets/YFCC100M/anns_geo_gombru.txt",'r')
+out_vocab = open("../../../datasets/YFCC100M/vocab_words_100k.txt",'w')
+out_vocab_embeddings = open("../../../datasets/YFCC100M/vocab_100k.json",'w')
+out_file = open("../../../datasets/YFCC100M/anns_geo_filtered_gombru.txt",'w')
+
+cores = 10
 
 def num_there(s):
     return any(i.isdigit() for i in s)
@@ -16,16 +18,19 @@ def num_there(s):
 
 print("Creating vocab")
 print(" -- Loading text model")
-text_model_path = '../../../ssd2/YFCC100M/text_models/gensim_glove840B300d_vectors.txt'
+text_model_path = '../../../datasets/YFCC100M/text_models/gensim_glove840B300d_vectors.txt'
 text_model = KeyedVectors.load_word2vec_format(text_model_path, binary=False, unicode_errors='ignore')
 print("-- Reading anns")
 all_vocab = {}
 vocab_embeddings = {}
+
+total_lines = 0
 for line in in_file:
+    total_lines+=1
     d = line.split(';')
     tags = d[1].split(',')
     for t in tags:
-        t = t.lower()
+        t = t.lower().replace('+','')
         if num_there(t): continue # Discard numeric tags
         if t in all_vocab: all_vocab[t] += 1 # Tags already in vocab
         else: # Tags still not in vocab
@@ -34,11 +39,10 @@ for line in in_file:
                 vocab_embeddings[t] = text_model[t]
                 all_vocab[t] = 1
             except:
-                print("Tag not found in text model: " + t)
+                # print("Tag not found in text model: " + t)
                 continue
 
-
-
+print(" -- Total anns lines: " + str(total_lines))
 print(" --  Total vocab length: " + str(all_vocab.__len__()))
 
 print("Filtering dict")
@@ -57,10 +61,11 @@ print(" -- Saving vocab")
 vocab_embeddings_filtered = {}
 for w in filtered_vocab:
     out_vocab.write(w + '\n')
-    vocab_embeddings_filtered[w] = vocab_embeddings[w]
+    vocab_embeddings_filtered[w] = vocab_embeddings[w].tolist()
 out_vocab.close()
 
 del vocab_embeddings
+print(" -- Saving vocab embeddings")
 json.dump(vocab_embeddings_filtered, out_vocab_embeddings)
 out_vocab_embeddings.close()
 del vocab_embeddings_filtered
@@ -70,18 +75,31 @@ del vocab_embeddings_filtered
 # Filter out samples withou hashtags
 # Remove images with more than 15 hashtags
 
+# I reopen because else it fails
+in_file.close()
+in_file = open("../../../datasets/YFCC100M/anns_geo_gombru.txt",'r')
+
 print("Filtering samples and tags")
 total = 0
 selected = 0
 for line in in_file:
+
     total+=1
+    if total % 1000 == 0:
+        print("Selected " + str(selected) + " out of " + str(total) + ". (total lines " + str(total_lines) + ")")
+
+    line = line.replace('\n', '').replace('\r', '')
     d = line.split(';')
+
+    # Find tags that are in vocab
     tags = d[1].split(',')
     selected_tags = []
     for t in tags:
-        t = t.lower()
+        t = t.lower().replace('+','')
         if t in filtered_vocab:
             selected_tags.append(t)
+
+    # Select images with 0-15 tags
     if len(selected_tags) > 0 and len(selected_tags) <= 15:
         selected_tags_str = selected_tags[0]
         for t_i in range(1,len(selected_tags)):
@@ -93,5 +111,5 @@ for line in in_file:
 in_file.close()
 out_file.close()
 
-print("Selected " + str(selected) + " samples from a total of " + str(total))
+print("Selected " + str(len(selected)) + " samples from a total of " + str(total))
 print("DONE")
