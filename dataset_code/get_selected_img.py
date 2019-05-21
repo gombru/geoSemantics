@@ -1,0 +1,32 @@
+from shutil import copyfile
+from joblib import Parallel, delayed
+
+idx_file = open("../../../datasets/YFCC100M/splits/train.txt","r")
+img_folder = "../../../hd/datasets/YFCC100M/img/"
+img_out_folder = "../../../ssd2/YFCC100M/train_img/"
+
+# c=0
+# for line in idx_file:
+#     c+=1
+#     if c % 100000 == 0: print(c)
+#     img_name = line.split(';')[0] + '.jpg'
+#     copyfile(img_folder + img_name, img_out_folder + img_name)
+#
+# print("DONE")
+
+def copy(img_name):
+    copyfile(img_folder + img_name, img_out_folder + img_name)
+
+print("Reading anns")
+filenames = []
+for line in idx_file:
+    filenames.append(line.split(';')[0] + '.jpg')
+
+print("Total files: " + str(len(filenames)))
+print("Coping")
+
+parallelizer = Parallel(n_jobs=12)
+tasks_iterator = (delayed(copy)(d) for d in filenames)
+parallelizer(tasks_iterator)
+
+print("DONE")

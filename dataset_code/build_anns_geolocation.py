@@ -94,7 +94,7 @@ for line in dataset_file:
     type = metadata[-2]
     if type != 'jpg' and type != 'jpeg' and type != 'png':
         continue  # Is video
-    url = metadata[-9].replace(';',',')
+    url = metadata[-9].replace(';',',').replace('\n', ' ').replace('\r', '')
     tags = metadata[10].replace(';',',')
     if len(tags) < 3: continue # No tags
 

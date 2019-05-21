@@ -4,14 +4,16 @@ import random
 
 def PreprocessImage(im):
     mean = (104.00698793, 116.66876762, 122.67891434)
-    if (im.shape.__len__() < 3 or im.shape[2] > 3):
-        im_gray = im
-        im = Image.new("RGB", im_gray.size)
-        im.paste(im_gray)
-        im = np.array(im, dtype=np.float32)
+    if im.shape.__len__() < 3:
+        im = np.stack((im,)*3, axis=-1)
+    if im.shape[2] > 3:
+        im = im[:, :, 0:3]
     im = im[:, :, ::-1]
     im -= mean
-    im = im.transpose((2, 0, 1))
+    try:
+        im = im.transpose((2, 0, 1))
+    except:
+        print(im.shape)
     return im
 
 def Mirror(im):
