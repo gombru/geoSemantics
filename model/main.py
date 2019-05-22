@@ -52,7 +52,7 @@ if resume:
 
 cudnn.benchmark = True
 
-# Data loading code
+# Data loading code (pin_memory allows better transferring of samples to GPU memory)
 train_dataset = YFCC_dataset.YFCC_Dataset(
     dataset,split_train,random_crop=ImgSize,mirror=True)
 

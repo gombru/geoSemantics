@@ -19,15 +19,15 @@ class YFCC_Dataset(Dataset):
 
         # Load GenSim Word2Vec model
         print("Loading textual model ...")
-        # text_model_path = '../../../ssd2/YFCC100M/text_models/gensim_glove840B300d_vectors.txt'
+        # text_model_path = '../../../datasets/YFCC100M/text_models/gensim_glove840B300d_vectors.txt'
         # self.text_model = KeyedVectors.load_word2vec_format(text_model_path, binary=False, unicode_errors='ignore')
-        text_model_path = '../../../ssd2/YFCC100M/vocab/vocab_100k.json'
+        text_model_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
         self.text_model = json.load(open(text_model_path))
         print("Vocabulary size: " + str(len(self.text_model)))
 
         # Count number of elements
         print("Opening dataset ...")
-        self.num_elements = sum(1 for line in open('../../../ssd2/YFCC100M/splits/' + split))
+        self.num_elements = sum(1 for line in open('../../../datasets/YFCC100M/splits/' + split))
         # self.num_elements = 5000
         print("Number of elements in " + split + ": " + str(self.num_elements))
 
@@ -35,11 +35,11 @@ class YFCC_Dataset(Dataset):
         self.img_ids = np.zeros(self.num_elements, dtype=np.uint64)
         self.tags = []
         self.latitudes = np.zeros(self.num_elements, dtype=np.float32)
-        self.longitudes = np.empty(self.num_elements, dtype=np.float32)
+        self.longitudes = np.zeros(self.num_elements, dtype=np.float32)
 
         # Read data
         print("Reading data ...")
-        for i,line in enumerate(open('../../../ssd2/YFCC100M/splits/' + split)):
+        for i,line in enumerate(open('../../../datasets/YFCC100M/splits/' + split)):
             if i % 2000000 == 0 and i != 0: print(i)
             # if i == 5000: break
             data = line.split(';')
