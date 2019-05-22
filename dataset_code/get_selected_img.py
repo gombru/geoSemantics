@@ -5,6 +5,7 @@ idx_file = open("../../../ssd2/YFCC100M/anns/anns_geo_filtered_gombru.txt","r")
 img_folder = "../../../hd/datasets/YFCC100M/img/"
 img_out_folder = "../../../ssd2/YFCC100M/img/"
 
+# Single thread code
 # c=0
 # for line in idx_file:
 #     c+=1
