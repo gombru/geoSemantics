@@ -12,10 +12,14 @@ class YFCC_Dataset(Dataset):
 
     def __init__(self, root_dir, split, random_crop, mirror):
 
-        self.root_dir = root_dir
         self.split = split
         self.random_crop = random_crop
         self.mirror = mirror
+
+        if 'train' in self.split:
+            self.root_dir = root_dir.replace('/hd/datasets/','/ssd2/')
+        else:
+            self.root_dir = root_dir.replace('/hd/', '/datasets/')
 
         # Load GenSim Word2Vec model
         print("Loading textual model ...")

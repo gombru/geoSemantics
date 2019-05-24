@@ -10,7 +10,7 @@ from pylab import zeros, arange, subplots, plt, savefig
 # Config
 training_id = 'YFCC_triplet_Img2Hash_e1024_m1_randomNeg'
 dataset = '../../../hd/datasets/YFCC100M/'
-split_train = 'train.txt'
+split_train = 'train_filtered.txt'
 split_val = 'val.txt'
 
 margin = 1
