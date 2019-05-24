@@ -17,9 +17,9 @@ class YFCC_Dataset(Dataset):
         self.mirror = mirror
 
         if 'train' in self.split:
-            self.root_dir = root_dir.replace('/hd/datasets/','/ssd2/')
+            self.root_dir = root_dir.replace('/hd/datasets/','/ssd2/') + '/train_img/'
         else:
-            self.root_dir = root_dir.replace('/hd/', '/datasets/')
+            self.root_dir = root_dir.replace('/hd/', '/datasets/')  + '/val_img/'
 
         # Load GenSim Word2Vec model
         print("Loading textual model ...")
@@ -66,13 +66,13 @@ class YFCC_Dataset(Dataset):
 
 
     def __getitem__(self, idx):
-        img_name = '{}{}/{}{}'.format(self.root_dir, 'img', self.img_ids[idx], '.jpg')
+        img_name = '{}/{}{}'.format(self.root_dir, self.img_ids[idx], '.jpg')
 
         # Load and transform image
         try:
             image = Image.open(img_name)
         except:
-            new_img_name = '{}{}/{}{}'.format(self.root_dir, 'img', '6985418911', '.jpg')
+            new_img_name = '{}/{}{}'.format(self.root_dir, '6985418911', '.jpg')
             print("Img file " + img_name + " not found, using hardcoded " + new_img_name)
             image = Image.open(new_img_name)
 
@@ -86,7 +86,7 @@ class YFCC_Dataset(Dataset):
 
         except:
             print("Error in data aumentation with image " + img_name)
-            new_img_name = '{}{}/{}{}'.format(self.root_dir, 'img', '6985418911', '.jpg')
+            new_img_name = '{}/{}{}'.format(self.root_dir, '6985418911', '.jpg')
             print("Using hardcoded: " + new_img_name)
             image = Image.open(new_img_name)
             if self.random_crop != 0:

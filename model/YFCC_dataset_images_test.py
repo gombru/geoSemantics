@@ -12,11 +12,6 @@ class YFCC_Dataset_Images_Test(Dataset):
         self.split = split
         self.central_crop = central_crop
 
-        if 'train' in self.split:
-            self.root_dir = root_dir.replace('/hd/datasets/','/ssd2/')
-        else:
-            self.root_dir = root_dir.replace('/hd/', '/datasets/')
-
         # Count number of elements
         print("Opening dataset ...")
         self.num_elements = sum(1 for line in open('../../../datasets/YFCC100M/splits/' + split))
@@ -39,7 +34,7 @@ class YFCC_Dataset_Images_Test(Dataset):
 
 
     def __getitem__(self, idx):
-        img_name = '{}{}/{}{}'.format(self.root_dir, 'img', self.img_ids[idx], '.jpg')
+        img_name = '{}/{}{}'.format(self.root_dir, self.img_ids[idx], '.jpg')
 
         # Load and transform image
         image = Image.open(img_name)
