@@ -18,9 +18,9 @@ norm_degree = 2 # The norm degree for pairwise distance
 embedding_dims= 1024
 
 ImgSize = 224
-gpus = [3,2,1,0]
+gpus =  [3] # [3,2,1,0]
 gpu = 3
-workers = 12 # Num of data loading workers
+workers = 6 # 6 Num of data loading workers
 epochs = 301
 start_epoch = 0 # Useful on restarts
 batch_size = 100 * len(gpus) # Batch size
@@ -35,9 +35,9 @@ best_loss = 1000
 optimizer_name = 'ADAM'
 lr = 2 * len(gpus) * 1e-6
 # Loss
-criterion = nn.TripletMarginLoss(margin=margin, p=norm_degree).cuda(gpu)
+criterion = nn.CrossEntropyLoss().cuda(gpu)
 # Model
-model = model.Model(embedding_dims=embedding_dims, margin=margin, norm_degree=norm_degree).cuda(gpu)
+model = model.Model().cuda(gpu)
 model = torch.nn.DataParallel(model, device_ids=gpus)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -69,19 +69,21 @@ val_loader = torch.utils.data.DataLoader(
 # Plotting config
 plot_data = {}
 plot_data['train_loss'] = zeros(epochs)
-plot_data['train_correct_triplets'] = zeros(epochs)
+plot_data['train_prec1'] = zeros(epochs)
+plot_data['train_prec5'] = zeros(epochs)
 plot_data['val_loss'] = zeros(epochs)
-plot_data['val_correct_triplets'] = zeros(epochs)
+plot_data['val_prec1'] = zeros(epochs)
+plot_data['val_prec5'] = zeros(epochs)
 plot_data['epoch'] = 0
 it_axes = arange(epochs)
 _, ax1 = subplots()
 ax2 = ax1.twinx()
 ax1.set_xlabel('epoch')
 ax1.set_ylabel('train loss (r), val loss (y)')
-ax2.set_ylabel('train correct triplets (b), val correct triplets (g)')
+ax2.set_ylabel('train prec1 (b), train prec5 (k), val prec1 (g), val prec5 (m)')
 ax2.set_autoscaley_on(False)
 ax1.set_ylim([0, 1])
-ax2.set_ylim([0, batch_size])
+ax2.set_ylim([0, 100])
 
 print("Dataset and model ready. Starting training ...")
 
@@ -105,11 +107,13 @@ for epoch in range(start_epoch, epochs):
 
     if plot:
         ax1.plot(it_axes[0:epoch], plot_data['train_loss'][0:epoch], 'r')
-        ax2.plot(it_axes[0:epoch], plot_data['train_correct_triplets'][0:epoch], 'b')
+        ax2.plot(it_axes[0:epoch], plot_data['train_prec1'][0:epoch], 'b')
+        ax2.plot(it_axes[0:epoch], plot_data['train_prec5'][0:epoch], 'k')
+
 
         ax1.plot(it_axes[0:epoch], plot_data['val_loss'][0:epoch], 'y')
-        ax2.plot(it_axes[0:epoch], plot_data['val_correct_triplets'][0:epoch], 'g')
-
+        ax2.plot(it_axes[0:epoch], plot_data['val_prec1'][0:epoch], 'g')
+        ax2.plot(it_axes[0:epoch], plot_data['val_prec5'][0:epoch], 'm')
         plt.title(training_id)
         plt.ion()
         plt.grid(True)

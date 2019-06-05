@@ -17,9 +17,9 @@ class YFCC_Dataset(Dataset):
         self.mirror = mirror
 
         if 'train' in self.split:
-            self.root_dir = root_dir.replace('/hd/datasets/','/ssd2/') + '/train_img/'
+            self.root_dir = root_dir.replace('/hd/datasets/','/ssd2/') + 'train_img/'
         else:
-            self.root_dir = root_dir.replace('/hd/', '/datasets/')  + '/val_img/'
+            self.root_dir = root_dir.replace('/hd/datasets/', '/datasets/')  + 'val_img/'
 
         # Load GenSim Word2Vec model
         print("Loading textual model ...")
@@ -32,7 +32,7 @@ class YFCC_Dataset(Dataset):
         # Count number of elements
         print("Opening dataset ...")
         self.num_elements = sum(1 for line in open('../../../datasets/YFCC100M/splits/' + split))
-        # self.num_elements = 5000
+        self.num_elements = 100
         print("Number of elements in " + split + ": " + str(self.num_elements))
 
         # Initialize containers
@@ -45,7 +45,7 @@ class YFCC_Dataset(Dataset):
         print("Reading data ...")
         for i,line in enumerate(open('../../../datasets/YFCC100M/splits/' + split)):
             if i % 2000000 == 0 and i != 0: print(i)
-            # if i == 5000: break
+            if i == 100: break
             data = line.split(';')
             self.img_ids[i] = int(data[0])
             tags_array = data[1].split(',')
@@ -66,13 +66,14 @@ class YFCC_Dataset(Dataset):
 
 
     def __getitem__(self, idx):
-        img_name = '{}/{}{}'.format(self.root_dir, self.img_ids[idx], '.jpg')
+        img_name = '{}{}{}'.format(self.root_dir, self.img_ids[idx], '.jpg')
 
         # Load and transform image
         try:
             image = Image.open(img_name)
+            # print("Img+ " + str(self.img_ids[idx]))
         except:
-            new_img_name = '{}/{}{}'.format(self.root_dir, '6985418911', '.jpg')
+            new_img_name = '../../../ssd2/YFCC100M/train_img/6985418911.jpg'
             print("Img file " + img_name + " not found, using hardcoded " + new_img_name)
             image = Image.open(new_img_name)
 
@@ -86,7 +87,7 @@ class YFCC_Dataset(Dataset):
 
         except:
             print("Error in data aumentation with image " + img_name)
-            new_img_name = '{}/{}{}'.format(self.root_dir, '6985418911', '.jpg')
+            new_img_name = '../../../ssd2/YFCC100M/train_img/6985418911.jpg'
             print("Using hardcoded: " + new_img_name)
             image = Image.open(new_img_name)
             if self.random_crop != 0:
@@ -96,6 +97,7 @@ class YFCC_Dataset(Dataset):
 
         # Select a random positive tag
         tag_pos = random.choice(self.tags[idx])
+        # print("Tag+ " +tag_pos)
         tag_pos_embedding = self.__getwordembedding__(tag_pos)
 
         # Select a negative tag
@@ -105,6 +107,8 @@ class YFCC_Dataset(Dataset):
             tag_neg = random.choice(self.tags[negative_img_idx])
             if tag_neg not in self.tags[idx]:
                 break
+        # print("Img- " + str(negative_img_idx))
+        # print("Tag- " + tag_neg)
         tag_neg_embedding = self.__getwordembedding__(tag_neg)
 
         # Build tensors

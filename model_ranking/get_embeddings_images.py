@@ -4,58 +4,61 @@ import os
 import torch
 import models_test
 import YFCC_dataset_images_test
+import torch.utils.data
+import torch.nn as nn
+import torch.backends.cudnn as cudnn
+import models_test
+import json
+import numpy as np
 
 dataset_folder = '../../../hd/datasets/YFCC100M/'
 test_im_dir = '../../../datasets/YFCC100M/test_img/'
 split = 'test.txt'
 
-batch_size = 200
-workers = 8
+batch_size = 600
+workers = 6
 embedding_dims = 1024
 ImgSize = 224
 
-model_name = 'YFCC_triplet_Img2Hash_e1024_m1_randomNeg'
+model_name = 'YFCC_triplet_Img2Hash_e1024_m1_randomNeg_epoch_18_ValLoss_0.31.pth'
 model_name = model_name.strip('.pth')
 
-gpus = [0]
-gpu = 0
-CUDA_VISIBLE_DEVICES = 0
+gpus = [1]
+gpu = 1
+CUDA_VISIBLE_DEVICES = 1
 
 if not os.path.exists(dataset_folder + 'results/' + model_name):
     os.makedirs(dataset_folder + 'results/' + model_name)
 
-output_file_path = dataset_folder + 'results/' + model_name + '/images_test.txt'
+output_file_path = dataset_folder + 'results/' + model_name + '/images_test.json'
 output_file = open(output_file_path, "w")
 
 state_dict = torch.load(dataset_folder + '/models/' + model_name + '.pth.tar',
-                        map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
+                        map_location={'cuda:0':'cuda:1', 'cuda:2':'cuda:1', 'cuda:3':'cuda:1'})
 
 
 model_test = models_test.ImagesModel(embedding_dims=embedding_dims)
 model_test = torch.nn.DataParallel(model_test, device_ids=gpus).cuda(gpu)
-model_test.load_state_dict(state_dict)
+model_test.load_state_dict(state_dict, strict=False)
 
 test_dataset = YFCC_dataset_images_test.YFCC_Dataset_Images_Test(test_im_dir, split, central_crop=ImgSize)
-
-model_test = model_test.Model(embedding_dims=embedding_dims).cuda(gpu)
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=workers,
-                                          pin_memory=True, sampler=None)
+                                          pin_memory=True)
+
+out_img_embeddings = {}
 
 with torch.no_grad():
     model_test.eval()
-    for i, (id, image) in enumerate(test_loader):
-
+    for i, (img_id, image) in enumerate(test_loader):
         image_var = torch.autograd.Variable(image)
         outputs = model_test(image_var)
 
         for idx,embedding in enumerate(outputs):
-            embedding_str = ''
-            for v in embedding:
-                embedding_str = embedding_str + ',' + str(float(v))
-            output_file.write(str(id[idx]) + ',' + embedding_str + '\n')
-
+            out_img_embeddings[str(img_id[idx])] = np.array(embedding.cpu()).tolist()
         print(str(i) + ' / ' + str(len(test_loader)))
 
+print("Writing results")
+json.dump(out_img_embeddings, output_file)
 output_file.close()
 
 print("DONE")

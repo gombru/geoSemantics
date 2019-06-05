@@ -3,9 +3,20 @@ import torch.nn as nn
 import torch.nn.functional as F
 import MyResNet
 
-class TagsModel(nn.Module):
+
+class SuperTagsModel(nn.Module):
 
     def __init__(self, embedding_dims=1024):
+        super(SuperTagsModel, self).__init__()
+        self.extra_net = TagsModel(embedding_dims)
+
+    def forward(self, tag):
+        x = self.extra_net(tag)
+        return x
+
+class TagsModel(nn.Module):
+
+    def __init__(self, embedding_dims):
         super(TagsModel, self).__init__()
         self.fc1 = BasicFC(300, 512)
         self.fc2 = BasicFC(512, embedding_dims)
@@ -15,10 +26,9 @@ class TagsModel(nn.Module):
         x = self.fc2(x)
         return x
 
-
 class ImagesModel(nn.Module):
 
-    def __init__(self, embedding_dims=1024):
+    def __init__(self, embedding_dims):
         super(ImagesModel, self).__init__()
         self.cnn = MyResNet.resnet50(pretrained=False, num_classes=embedding_dims)
 
