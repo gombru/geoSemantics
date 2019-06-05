@@ -8,15 +8,19 @@ import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Config
-training_id = 'YFCC_MCLL'
+training_id = 'YFCC_triplet_Img2Hash_e1024_m1_randomNeg'
 dataset = '../../../hd/datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
 split_val = 'val.txt'
 
+margin = 1
+norm_degree = 2 # The norm degree for pairwise distance
+embedding_dims= 1024
+
 ImgSize = 224
-gpus = [3]  # [3,2,1,0]
+gpus = [3,2,1,0]
 gpu = 3
-workers = 6  # 6 Num of data loading workers
+workers = 6 # Num of data loading workers
 epochs = 301
 start_epoch = 0 # Useful on restarts
 batch_size = 100 * len(gpus) # Batch size
@@ -24,6 +28,7 @@ print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k image
 resume = None  # Path to checkpoint top resume training
 plot = True
 best_epoch = 0
+best_correct_triplets = 0
 best_loss = 1000
 
 # Optimizer

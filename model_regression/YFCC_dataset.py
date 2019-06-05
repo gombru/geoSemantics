@@ -1,12 +1,11 @@
 from __future__ import print_function, division
 import torch
 import numpy as np
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import image_processing
 from PIL import Image
 import json
-import random
-# from gensim.models.keyedvectors import KeyedVectors
+
 
 class YFCC_Dataset(Dataset):
 
@@ -32,26 +31,22 @@ class YFCC_Dataset(Dataset):
         # Count number of elements
         print("Opening dataset ...")
         self.num_elements = sum(1 for line in open('../../../datasets/YFCC100M/splits/' + split))
-        # self.num_elements = 100
+        self.num_elements = 100
         print("Number of elements in " + split + ": " + str(self.num_elements))
 
         # Initialize containers
         self.img_ids = np.zeros(self.num_elements, dtype=np.uint64)
         self.tags = []
-        self.latitudes = np.zeros(self.num_elements, dtype=np.float32)
-        self.longitudes = np.zeros(self.num_elements, dtype=np.float32)
 
         # Read data
         print("Reading data ...")
         for i,line in enumerate(open('../../../datasets/YFCC100M/splits/' + split)):
             if i % 2000000 == 0 and i != 0: print(i)
-            # if i == 100: break
+            if i == 100: break
             data = line.split(';')
             self.img_ids[i] = int(data[0])
             tags_array = data[1].split(',')
             self.tags.append(tags_array)
-            self.latitudes[i] = float(data[4])
-            self.longitudes[i] = float(data[5])
 
         print("Data read. Set size: " + str(len(self.tags)) )
 
@@ -95,27 +90,13 @@ class YFCC_Dataset(Dataset):
             im_np = np.array(image, dtype=np.float32)
             im_np = image_processing.PreprocessImage(im_np)
 
-        # Select a random positive tag
-        tag_pos = random.choice(self.tags[idx])
-        # print("Tag+ " +tag_pos)
-        tag_pos_embedding = self.__getwordembedding__(tag_pos)
-
-        # Select a negative tag
-        # --> Random negative: Random tag from random image
-        while True:
-            negative_img_idx = random.randint(0, self.num_elements - 1)
-            tag_neg = random.choice(self.tags[negative_img_idx])
-            if tag_neg not in self.tags[idx]:
-                break
-        # print("Img- " + str(negative_img_idx))
-        # print("Tag- " + tag_neg)
-        tag_neg_embedding = self.__getwordembedding__(tag_neg)
+        # Compute average embedding of image tags
+        tags_embedding_average = np.zeros(300, dtype=np.float32)
+        for tag in self.tags[idx]:
+            tags_embedding_average += self.__getwordembedding__(tag)
 
         # Build tensors
         img_tensor = torch.from_numpy(np.copy(im_np))
-        latitude = torch.from_numpy(np.array(self.latitudes[idx]))
-        longitude = torch.from_numpy(np.array(self.longitudes[idx]))
-        tag_pos_tensor = torch.from_numpy(tag_pos_embedding)
-        tag_neg_tensor = torch.from_numpy(tag_neg_embedding)
+        tags_embedding_average = torch.from_numpy(tags_embedding_average)
 
-        return img_tensor, tag_pos_tensor, tag_neg_tensor, latitude, longitude
+        return img_tensor, tags_embedding_average
