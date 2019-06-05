@@ -30,7 +30,7 @@ best_loss = 1000
 optimizer_name = 'ADAM'
 lr = 1e-3 * len(gpus)
 # Loss
-criterion = nn.CrossEntropyLoss().cuda(gpu)
+criterion = nn.CosineEmbeddingLoss().cuda(gpu)
 # Model
 model = model.Model().cuda(gpu)
 model = torch.nn.DataParallel(model, device_ids=gpus)

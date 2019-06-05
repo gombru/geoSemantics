@@ -27,7 +27,8 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
 
         # compute output
         output = model(image_var)
-        loss = criterion(output, target_var)
+        y = torch.ones(len(output))
+        loss = criterion(output, target_var, y)
 
         # measure and record loss
         loss_meter.update(loss.data.item(), image.size()[0])
@@ -72,7 +73,8 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
 
             # compute output
             output = model(image_var)
-            loss = criterion(output, target_var)
+            y = torch.ones(len(output))
+            loss = criterion(output, target_var, y)
 
             # measure and record loss
             loss_meter.update(loss.data.item(), image.size()[0])
