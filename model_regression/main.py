@@ -27,7 +27,7 @@ best_epoch = 0
 best_loss = 1000
 
 # Optimizer (SGD)
-lr = 1e-3 * len(gpus)
+lr = 1e-2 * len(gpus) * 2
 momentum = 0.9
 weight_decay = 1e-4
 
@@ -73,7 +73,7 @@ it_axes = arange(epochs)
 _, ax1 = subplots()
 ax1.set_xlabel('epoch')
 ax1.set_ylabel('train loss (r), val loss (y)')
-# ax1.set_ylim([0, 300])
+ax1.set_ylim([0, 0.5])
 
 print("Dataset and model ready. Starting training ...")
 

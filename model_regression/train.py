@@ -27,7 +27,7 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
 
         # compute output
         output = model(image_var)
-        y = torch.ones(image.size()[0])  # Flag to indicate that all are positive pairs
+        y = torch.ones(image.size()[0]).cuda(gpu, async=True)  # Flag to indicate that all are positive pairs
         loss = criterion(output, target_var, y)
 
         # measure and record loss
@@ -73,7 +73,7 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
 
             # compute output
             output = model(image_var)
-            y = torch.ones(image.size()[0])  # Flag to indicate that all are positive pairs
+            y = torch.ones(image.size()[0]).cuda(gpu, async=True)  # Flag to indicate that all are positive pairs
             loss = criterion(output, target_var, y)
 
             # measure and record loss
