@@ -24,20 +24,6 @@ gpus = [1]
 gpu = 1
 CUDA_VISIBLE_DEVICES = 1
 
-#
-# def get_top_k(output, topk=10):
-#
-#     _, pred = output.topk(topk, 1, True, True)
-#     pred = pred.t()
-#     correct = pred.eq(target.view(1, -1).expand_as(pred))
-#
-#     res = []
-#     for k in topk:
-#         correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
-#         res.append(correct_k.mul_(100.0 / batch_size))
-#     return res
-
-
 
 if not os.path.exists(dataset_folder + 'results/' + model_name):
     os.makedirs(dataset_folder + 'results/' + model_name)
@@ -57,7 +43,7 @@ test_dataset = YFCC_dataset_test.YFCC_Dataset_Images_Test(test_im_dir, split, ce
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=workers,
                                           pin_memory=True)
 
-out_img_embeddings = {}
+results = {}
 
 with torch.no_grad():
     model_test.eval()
@@ -65,13 +51,14 @@ with torch.no_grad():
         image_var = torch.autograd.Variable(image)
         outputs = model_test(image_var)
         for idx,values in enumerate(outputs):
-            _, topk = values.topk(10, 1, True, True)
-            print(topk)
-            # out_img_embeddings[str(img_id[idx])] = np.array(embedding.cpu()).tolist()
+            values, class_indices = values.topk(10, 0, True, True)
+            results[str(img_id[idx])] = {}
+            results[str(img_id[idx])]['tags_indices'] = np.array(class_indices.cpu()).tolist()
+            results[str(img_id[idx])]['tags_scores'] = np.array(values.cpu()).tolist()
         print(str(i) + ' / ' + str(len(test_loader)))
 
 print("Writing results")
-json.dump(out_img_embeddings, output_file)
+json.dump(results, output_file)
 output_file.close()
 
 print("DONE")
