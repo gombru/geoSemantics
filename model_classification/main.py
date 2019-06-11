@@ -14,7 +14,7 @@ split_train = 'train_filtered.txt'
 split_val = 'val.txt'
 
 ImgSize = 224
-gpus =  [3,2,1,0] # [3,2,1,0]
+gpus = [3,2,1,0] # [3,2,1,0]
 gpu = 3
 workers = 12 # 6 Num of data loading workers
 epochs = 301
@@ -24,19 +24,22 @@ print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k image
 resume = None  # Path to checkpoint top resume training
 plot = True
 best_epoch = 0
-best_correct_triplets = 0
 best_loss = 1000
 
-# Optimizer
-optimizer_name = 'ADAM'
+# Optimizer (SGD)
 lr = 1e-3 * len(gpus)
+momentum = 0.9
+weight_decay = 1e-4
+
 # Loss
 criterion = nn.CrossEntropyLoss().cuda(gpu)
 # Model
 model = model.Model().cuda(gpu)
 model = torch.nn.DataParallel(model, device_ids=gpus)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+# optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
+
 
 # Optionally resume from a checkpoint
 if resume:

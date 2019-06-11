@@ -5,6 +5,7 @@ from torch.utils.data import Dataset
 import image_processing
 from PIL import Image
 import json
+import random
 
 
 class YFCC_Dataset(Dataset):
@@ -90,14 +91,31 @@ class YFCC_Dataset(Dataset):
             im_np = np.array(image, dtype=np.float32)
             im_np = image_processing.PreprocessImage(im_np)
 
-        # Compute average of embeddings of image tags
-        tags_embedding_average = np.zeros(300, dtype=np.float32)
+        # Compute sum of embedding of image tags
+        positive_tags_embedding_average = np.zeros(300, dtype=np.float32)
         for tag in self.tags[idx]:
-            tags_embedding_average += self.__getwordembedding__(tag)
-        tags_embedding_average /= len(self.tags[idx])
+            positive_tags_embedding_average += self.__getwordembedding__(tag)
+        positive_tags_embedding_average /= len(self.tags[idx])
+
+        # Get random image that does not share any tag with the anchor and get its tags average
+        searching = True
+        while searching:
+            searching = False
+            negative_img_idx = random.randint(0, self.num_elements - 1)
+            for cur_tag_neg in self.tags[negative_img_idx]:
+                if cur_tag_neg in self.tags[idx]:
+                    searching = True
+                    break
+
+        # Compute sum of embedding of negative image tags
+        negative_tags_embedding_average = np.zeros(300, dtype=np.float32)
+        for tag in self.tags[negative_img_idx]:
+            negative_tags_embedding_average += self.__getwordembedding__(tag)
+        negative_tags_embedding_average /= len(self.tags[negative_img_idx])
 
         # Build tensors
         img_tensor = torch.from_numpy(np.copy(im_np))
-        tags_embedding_average = torch.from_numpy(tags_embedding_average)
+        positive_tags_embedding_average = torch.from_numpy(positive_tags_embedding_average)
+        negative_tags_embedding_average = torch.from_numpy(negative_tags_embedding_average)
 
-        return img_tensor, tags_embedding_average
+        return img_tensor, positive_tags_embedding_average, negative_tags_embedding_average
