@@ -12,7 +12,7 @@ dataset_folder = '../../../hd/datasets/YFCC100M/'
 test_im_dir = '../../../datasets/YFCC100M/test_img/'
 split = 'test.txt'
 
-batch_size = 600
+batch_size = 2
 workers = 6
 ImgSize = 224
 
@@ -27,7 +27,7 @@ CUDA_VISIBLE_DEVICES = 1
 if not os.path.exists(dataset_folder + 'results/' + model_name):
     os.makedirs(dataset_folder + 'results/' + model_name)
 
-output_file_path = dataset_folder + 'results/' + model_name + '/images_test.json'
+output_file_path = dataset_folder + 'results/' + model_name + '/tags_top_img.json'
 output_file = open(output_file_path, "w")
 
 state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.tar',
@@ -42,11 +42,12 @@ test_dataset = YFCC_dataset_test.YFCC_Dataset_Images_Test(test_im_dir, split, ce
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=workers,
                                           pin_memory=True)
 
-top_img_per_tag = np.zeros((100000,10,2), dtype=int)
+top_img_per_tag = np.zeros((100000,10,2), dtype=np.float32)
 
 with torch.no_grad():
     model_test.eval()
     for i, (img_id, image) in enumerate(test_loader):
+        if i == 20: break
         image_var = torch.autograd.Variable(image)
         outputs = model_test(image_var)
         for idx,scores in enumerate(outputs):
@@ -60,7 +61,7 @@ with torch.no_grad():
 
 results = {}
 for i in range(0,100000):
-    results[i] = top_img_per_tag[i,:,0].tolist()
+    results[i] = top_img_per_tag[i,:,0].astype(int).tolist()
 
 print("Writing results")
 json.dump(results, output_file)

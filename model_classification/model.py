@@ -1,5 +1,6 @@
 import torch.nn as nn
 import MyResNet
+import torch.nn.functional as F
 
 class Model(nn.Module):
 
@@ -9,4 +10,6 @@ class Model(nn.Module):
 
     def forward(self, image):
         x = self.cnn(image)
+        if not self.training:
+        	x = F.softmax(x, dim=1)
         return x

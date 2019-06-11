@@ -18,6 +18,13 @@ results_path = dataset + 'results/' + model_name + '/images_test.json'
 accuracy_k = 10 # Compute accuracy at k (will also compute it at 1)
 save_img = True # Save some random image tagging results
 
+print("Loading tag list ...")
+tags_list = []
+tags_file = '../../../datasets/YFCC100M/vocab/vocab_words_100k.txt'
+for line in open(tags_file):
+    tags_list.append(line.replace('\n', ''))
+print("Vocabulary size: " + str(len(tags_list)))
+
 
 print("Reading results ...")
 results = json.load(open(results_path))
@@ -30,25 +37,25 @@ print("Starting per-image evaluation")
 
 total_accuracy_at_1 = 0.0
 total_accuracy_at_k = 0.0
-pdist = nn.PairwiseDistance(p=2)
 
 for i, (img_id, img_result) in enumerate(results.items()):
 
-    if i % 500 == 0: print(i)
-    img_id = str(img_id)
+    if i % 50000 == 0: print(i)
     cur_img_tags = img_result['tags_indices']
 
+    img_id = int(img_id)
+
     # Compute Accuracy at 1
-    if cur_img_tags[0] in test_images_tags[int(img_id)]:
+    if tags_list[cur_img_tags[0]] in test_images_tags[img_id]:
         total_accuracy_at_1 += 1
     # Compute Accuracy at k
     for cur_img_tag in cur_img_tags:
-        if cur_img_tag in test_images_tags[int(img_id)]:
+        if tags_list[cur_img_tag] in test_images_tags[img_id]:
             total_accuracy_at_k += 1
             break
 
 total_accuracy_at_1 /= len(results)
 total_accuracy_at_k /= len(results)
 
-print("Accuracy at 1:" + str(total_accuracy_at_1))
-print("Accuracy at " + str(accuracy_k) + " :" + str(total_accuracy_at_k))
+print("Accuracy at 1:" + str(total_accuracy_at_1*100))
+print("Accuracy at " + str(accuracy_k) + " :" + str(total_accuracy_at_k*100))

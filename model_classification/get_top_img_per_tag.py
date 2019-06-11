@@ -7,6 +7,7 @@ import json
 import numpy as np
 import YFCC_dataset_test
 
+# NOT WORKING BECAUSE REQUIRES AN INSANE AMOUNT OF MEMORY
 
 dataset_folder = '../../../hd/datasets/YFCC100M/'
 test_im_dir = '../../../datasets/YFCC100M/test_img/'
