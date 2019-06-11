@@ -3,26 +3,29 @@
 # Measure Precision at K
 
 import aux
+import torch
 import torch.nn.functional as F
+import torch.nn as nn
 import operator
 import random
-from shutil import  copyfile
+from shutil import copyfile
 import os
+import json
+import numpy as np
 
 dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'YFCC_triplet_Img2Hash_e1024_m1_randomNeg'
+model_name = 'YFCC_triplet_Img2Hash_e1024_m1_randomNeg_epoch_18_ValLoss_0.31'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
-img_embeddings_path = dataset + model_name + '/results/' + 'images_test.txt'
-tags_embeddings_path = dataset + model_name + '/results/' + 'tags.txt'
-k = 10 # Compute precision at k
-save_img = True # Save some random image retrieval results
-
+img_embeddings_path = dataset + 'results/' + model_name + '/images_test.json'
+tags_embeddings_path = dataset + 'results/' + model_name + '/tags.json'
+precision_k = 10  # Compute precision at k
+save_img = False  # Save some random image retrieval results
 
 print("Reading tags embeddings ...")
-tags_embeddings = aux.read_embeddings(tags_embeddings_path)
+tags_embeddings = json.load(open(tags_embeddings_path))
 print("Reading imgs embeddings ...")
-img_embeddings = aux.read_embeddings(img_embeddings_path)
-print("Reading tags of testing images")
+img_embeddings = json.load(open(img_embeddings_path))
+print("Reading tags of testing images ...")
 test_images_tags = aux.read_tags(test_split_path)
 
 print("Get tags with at least k appearances in test images")
@@ -38,46 +41,53 @@ print("Total tags in test images: " + str(len(tags_test_histogram)))
 
 print("Filtering vocab")
 tags_test_histogram_filtered = {}
-for k,v in tags_test_histogram:
-    if v > k: tags_test_histogram_filtered[k] = v
+for k, v in tags_test_histogram.items():
+    if v > precision_k:
+        tags_test_histogram_filtered[k] = v
 
-print("Total tags in test images with more than " + str(k) + " appearances: " + str(len(tags_test_histogram_filtered)))
+print("Total tags in test images with more than " + str(precision_k) + " appearances: " + str(
+    len(tags_test_histogram_filtered)))
+
+print("Puting image embeddings in a tensor")
+# Put img embeddings in a tensor
+img_embeddings_tensor = torch.zeros([len(img_embeddings), 1024], dtype=torch.float32).cuda()
+img_ids = []
+for i, (img_id, img_embedding) in enumerate(img_embeddings.items()):
+    img_ids.append(img_id)
+    img_embeddings_tensor[i, :] = torch.from_numpy(np.asarray(img_embedding, dtype=np.float32))
+del img_embeddings
 
 print("Starting per-tag evaluation")
-
+pdist = nn.PairwiseDistance(p=2)
 total_precision = 0.0
 for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()):
+    if i % 500 == 0: print(str(i) + ': ' + tag)
 
-    if i % 500 == 0: print(i)
-
-    tag_embedding = tags_embeddings[tag]
-    image_distances = {}
-    # Compute distance between the tag and each image
-    for img_id, img_embedding in img_embeddings.items():
-        d = F.pairwise_distance(tag_embedding, img_embedding, p=2)
-        image_distances[img_id] = d
+    tag_embedding_tensor = torch.from_numpy(np.asarray(tags_embeddings[tag], dtype=np.float32)).cuda()
+    distances = pdist(img_embeddings_tensor, tag_embedding_tensor)
+    distances = np.array(distances.cpu())
 
     # Sort images by distance to tag
-    img_sorted_by_dist = sorted(image_distances.values())
-    img_sorted_by_dist = img_sorted_by_dist[0:k]
+    indices_sorted = np.argsort(distances)[0:precision_k]
 
     # Save img
-    if save_img and random.randint(0,100000) < 50:
+    if save_img and random.randint(0, len(tags_test_histogram_filtered)) < 2000:
         if not os.path.isdir(dataset + '/retrieval_results/' + tag + '/'):
             os.makedirs(dataset + '/retrieval_results/' + tag + '/')
 
-        for img in img_sorted_by_dist:
-            copyfile('../../../datasets/YFCC100M/test_img/' + img[0] + '.jpg', dataset + '/retrieval_results/' + tag + '/' + img[0] + '.jpg')
+        for idx in indices_sorted:
+            copyfile('../../../datasets/YFCC100M/test_img/' + img_ids[idx] + '.jpg',
+                     dataset + '/retrieval_results/' + tag + '/' + img_ids[idx] + '.jpg')
 
     # Compute Precision at k
     precision_tag = 0.0
-    for img in img_sorted_by_dist:
-        if tag in test_images_tags[img[0]]:
+    for idx in indices_sorted:
+        if tag in test_images_tags[int(img_ids[idx])]:
             precision_tag += 1
 
-    precision_tag /= k
+    precision_tag /= precision_k
     total_precision += precision_tag
 
 total_precision /= len(tags_test_histogram_filtered)
 
-print("Precision at " + str(k) + " :" + str(total_precision))
+print("Precision at " + str(precision_k) + ": " + str(total_precision))
