@@ -7,7 +7,7 @@ import torch.nn as nn
 
 dataset = '../../../hd/datasets/YFCC100M/'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
-ordered_vocab_path = "../../../datasets/YFCC100M/vocab_words_100k.txt"
+ordered_vocab_path = '../../../datasets/YFCC100M/vocab/vocab_words_100k.txt'
 accuracy_k = 10 # Compute accuracy at k (will also compute it at 1)
 
 print("Reading tags of testing images ... ")
