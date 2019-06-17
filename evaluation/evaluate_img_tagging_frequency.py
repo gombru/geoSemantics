@@ -40,5 +40,5 @@ for i, (img_id, img_tags) in enumerate(test_images_tags.items()):
 total_accuracy_at_1 /= len(test_images_tags)
 total_accuracy_at_k /= len(test_images_tags)
 
-print("Accuracy at 1:" + str(total_accuracy_at_1))
-print("Accuracy at " + str(accuracy_k) + " :" + str(total_accuracy_at_k))
+print("Accuracy at 1:" + str(total_accuracy_at_1*100))
+print("Accuracy at " + str(accuracy_k) + " :" + str(total_accuracy_at_k*100))

@@ -90,4 +90,4 @@ for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()
 
 total_precision /= len(tags_test_histogram_filtered)
 
-print("Precision at " + str(precision_k) + ": " + str(total_precision))
+print("Precision at " + str(precision_k*100) + ": " + str(total_precision*100))
