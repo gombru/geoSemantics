@@ -65,7 +65,8 @@ print("Starting per-tag evaluation")
 pdist = nn.PairwiseDistance(p=2)
 total_precision = 0.0
 for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()):
-    if i % 500 == 0: print(str(i) + ': ' + tag)
+    if i % 500 == 0:
+        print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(total_precision/i))
 
     tag_embedding_tensor = torch.from_numpy(np.asarray(tags_embeddings[tag], dtype=np.float32)).cuda()
     distances = pdist(img_embeddings_tensor, tag_embedding_tensor)
@@ -95,4 +96,4 @@ for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()
 
 total_precision /= len(tags_test_histogram_filtered)
 
-print("Precision at " + str(precision_k*100) + ": " + str(total_precision*100))
+print("Precision at " + str(precision_k) + ": " + str(total_precision*100))
