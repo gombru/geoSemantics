@@ -23,7 +23,7 @@ print("Using GloVe embeddings")
 tags_embeddings_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
 embedding_dim = 300
 precision_k = 10  # Compute precision at k
-save_img = False  # Save some random image retrieval results
+save_img = True  # Save some random image retrieval results
 
 print("Reading tags embeddings ...")
 tags_embeddings = json.load(open(tags_embeddings_path))
@@ -76,6 +76,7 @@ for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()
 
     # Save img
     if save_img and random.randint(0, len(tags_test_histogram_filtered)) < 2000:
+        print("Saving results for: " + tag)
         if not os.path.isdir(dataset + '/retrieval_results/model_name/' + tag + '/'):
             os.makedirs(dataset + '/retrieval_results/model_name/' + tag + '/')
 
