@@ -61,11 +61,11 @@ for i, (img_id, img_embedding) in enumerate(img_embeddings.items()):
 
     # Save img
     if save_img and random.randint(0,100000) < 1000:
-        if not os.path.isdir(dataset + '/tagging_results/' + img_id + '/'):
-            os.makedirs(dataset + '/tagging_results/' + img_id + '/')
-        copyfile('../../../datasets/YFCC100M/test_img/' + img_id + '.jpg', dataset + '/tagging_results/' + img_id + '/' + img_id + '.jpg')
+        if not os.path.isdir(dataset + '/tagging_results/model_name/' + img_id + '/'):
+            os.makedirs(dataset + '/tagging_results/model_name/' + img_id + '/')
+        copyfile('../../../datasets/YFCC100M/test_img/' + img_id + '.jpg', dataset + '/tagging_results/model_name/' + img_id + '/' + img_id + '.jpg')
         # Save txt file with gt and predicted tags
-        with open(dataset + '/tagging_results/' + img_id + '/tags.txt','w') as outfile:
+        with open(dataset + '/tagging_results/model_name/' + img_id + '/tags.txt','w') as outfile:
             outfile.write('GT_tags\n')
             for tag in test_images_tags[int(img_id)]:
                 outfile.write(tag + ' ')

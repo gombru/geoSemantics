@@ -76,12 +76,12 @@ for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()
 
     # Save img
     if save_img and random.randint(0, len(tags_test_histogram_filtered)) < 2000:
-        if not os.path.isdir(dataset + '/retrieval_results/' + tag + '/'):
-            os.makedirs(dataset + '/retrieval_results/' + tag + '/')
+        if not os.path.isdir(dataset + '/retrieval_results/model_name/' + tag + '/'):
+            os.makedirs(dataset + '/retrieval_results/model_name/' + tag + '/')
 
         for idx in indices_sorted:
             copyfile('../../../datasets/YFCC100M/test_img/' + img_ids[idx] + '.jpg',
-                     dataset + '/retrieval_results/' + tag + '/' + img_ids[idx] + '.jpg')
+                     dataset + '/retrieval_results/model_name/' + tag + '/' + img_ids[idx] + '.jpg')
 
     # Compute Precision at k
     precision_tag = 0.0
