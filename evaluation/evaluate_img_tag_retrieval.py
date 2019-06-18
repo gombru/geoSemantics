@@ -14,7 +14,7 @@ import json
 import numpy as np
 
 dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'YFCC_triplet_Img2Hash_e1024_m1_randomNeg_epoch_18_ValLoss_0.31'
+model_name = 'YFCC_NCSL_epoch_15_ValLoss_0.42'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 img_embeddings_path = dataset + 'results/' + model_name + '/images_test.json'
 # tags_embeddings_path = dataset + 'results/' + model_name + '/tags.json'
