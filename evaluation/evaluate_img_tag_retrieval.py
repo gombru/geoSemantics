@@ -23,7 +23,10 @@ print("Using GloVe embeddings")
 tags_embeddings_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
 embedding_dim = 300
 precision_k = 10  # Compute precision at k
-save_img = False  # Save some random image retrieval results
+save_img = True  # Save some random image retrieval results
+
+normalize = True # Normalize img embeddings and tag embeddings using L2 norm
+
 
 print("Reading tags embeddings ...")
 tags_embeddings = json.load(open(tags_embeddings_path))
@@ -31,6 +34,9 @@ print("Reading imgs embeddings ...")
 img_embeddings = json.load(open(img_embeddings_path))
 print("Reading tags of testing images ...")
 test_images_tags = aux.read_tags(test_split_path)
+
+if normalize:
+    print("Using L2 normalization on img AND tag embeddings")
 
 print("Get tags with at least k appearances in test images")
 tags_test_histogram = {}
@@ -46,29 +52,36 @@ print("Total tags in test images: " + str(len(tags_test_histogram)))
 print("Filtering vocab")
 tags_test_histogram_filtered = {}
 for k, v in tags_test_histogram.items():
-    if v > precision_k:
+    if v >= precision_k:
         tags_test_histogram_filtered[k] = v
 
 print("Total tags in test images with more than " + str(precision_k) + " appearances: " + str(
     len(tags_test_histogram_filtered)))
 
-print("Puting image embeddings in a tensor")
+print("Putting image embeddings in a tensor")
 # Put img embeddings in a tensor
 img_embeddings_tensor = torch.zeros([len(img_embeddings), embedding_dim], dtype=torch.float32).cuda()
 img_ids = []
 for i, (img_id, img_embedding) in enumerate(img_embeddings.items()):
     img_ids.append(img_id)
-    img_embeddings_tensor[i, :] = torch.from_numpy(np.asarray(img_embedding, dtype=np.float32))
+    img_np_embedding = np.asarray(img_embedding, dtype=np.float32)
+    if normalize:
+        img_np_embedding /= np.linalg.norm(img_np_embedding)
+    img_embeddings_tensor[i, :] = torch.from_numpy(img_np_embedding)
 del img_embeddings
 
 print("Starting per-tag evaluation")
 pdist = nn.PairwiseDistance(p=2)
 total_precision = 0.0
 for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()):
-    if i % 500 == 0:
-        print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(total_precision/i))
+    if i % 500 == 0 and i > 0:
+        print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*total_precision/i))
 
-    tag_embedding_tensor = torch.from_numpy(np.asarray(tags_embeddings[tag], dtype=np.float32)).cuda()
+    tag_np_embedding = np.asarray(tags_embeddings[tag], dtype=np.float32)
+    if normalize:
+        tag_np_embedding /= np.linalg.norm(tag_np_embedding)
+
+    tag_embedding_tensor = torch.from_numpy(tag_np_embedding).cuda()
     distances = pdist(img_embeddings_tensor, tag_embedding_tensor)
     distances = np.array(distances.cpu())
 
@@ -76,7 +89,7 @@ for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()
     indices_sorted = np.argsort(distances)[0:precision_k]
 
     # Save img
-    if save_img and random.randint(0, len(tags_test_histogram_filtered)) < 400:
+    if save_img and random.randint(0, len(tags_test_histogram_filtered)) < 50:
         print("Saving results for: " + tag)
         if not os.path.isdir(dataset + '/retrieval_results/' + model_name + '/' + tag + '/'):
             os.makedirs(dataset + '/retrieval_results/' + model_name + '/' + tag + '/')
