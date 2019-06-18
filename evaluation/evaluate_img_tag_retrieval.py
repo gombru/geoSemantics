@@ -23,7 +23,7 @@ print("Using GloVe embeddings")
 tags_embeddings_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
 embedding_dim = 300
 precision_k = 10  # Compute precision at k
-save_img = True  # Save some random image retrieval results
+save_img = False  # Save some random image retrieval results
 
 print("Reading tags embeddings ...")
 tags_embeddings = json.load(open(tags_embeddings_path))
