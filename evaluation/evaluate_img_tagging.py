@@ -12,10 +12,14 @@ import json
 import numpy as np
 
 dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'YFCC_triplet_Img2Hash_e1024_m1_randomNeg_epoch_18_ValLoss_0.31'
+model_name = 'YFCC_NCSL_epoch_15_ValLoss_0.42.pth'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 img_embeddings_path = dataset + 'results/' + model_name + '/images_test.json'
-tags_embeddings_path = dataset + 'results/' + model_name + '/tags.json'
+# tags_embeddings_path = dataset + 'results/' + model_name + '/tags.json'
+# If using GloVe embeddings directly
+print("Using GloVe embeddings")
+tags_embeddings_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
+embedding_dim = 300
 accuracy_k = 10 # Compute accuracy at k (will also compute it at 1)
 save_img = True # Save some random image tagging results
 
@@ -30,7 +34,7 @@ test_images_tags = aux.read_tags(test_split_path)
 
 print("Puting tags embeddings in a tensor")
 # Put img embeddings in a tensor
-tags_embeddings_tensor = torch.zeros([len(tags_embeddings), 1024], dtype=torch.float32).cuda()
+tags_embeddings_tensor = torch.zeros([len(tags_embeddings), embedding_dim], dtype=torch.float32).cuda()
 tags = []
 for i,(tag, tag_embedding) in enumerate(tags_embeddings.items()):
     tags.append(tag)
