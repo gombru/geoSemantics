@@ -74,7 +74,7 @@ print("Starting per-tag evaluation")
 pdist = nn.PairwiseDistance(p=2)
 total_precision = 0.0
 for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()):
-    if i % 500 == 0 and i > 0:
+    if i % 100 == 0 and i > 0:
         print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*total_precision/i))
 
     tag_np_embedding = np.asarray(tags_embeddings[tag], dtype=np.float32)
@@ -88,8 +88,19 @@ for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()
     # Sort images by distance to tag
     indices_sorted = np.argsort(distances)[0:precision_k]
 
+    # Compute Precision at k
+    correct = False
+    precision_tag = 0.0
+    for idx in indices_sorted:
+        if tag in test_images_tags[int(img_ids[idx])]:
+            correct = True
+            precision_tag += 1
+
+    precision_tag /= precision_k
+    total_precision += precision_tag
+
     # Save img
-    if save_img and random.randint(0, len(tags_test_histogram_filtered)) < 50:
+    if save_img and correct and random.randint(0, 100) < 5:
         print("Saving results for: " + tag)
         if not os.path.isdir(dataset + '/retrieval_results/' + model_name + '/' + tag + '/'):
             os.makedirs(dataset + '/retrieval_results/' + model_name + '/' + tag + '/')
@@ -97,15 +108,6 @@ for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()
         for idx in indices_sorted:
             copyfile('../../../datasets/YFCC100M/test_img/' + img_ids[idx] + '.jpg',
                      dataset + '/retrieval_results/' + model_name + '/' + tag + '/' + img_ids[idx] + '.jpg')
-
-    # Compute Precision at k
-    precision_tag = 0.0
-    for idx in indices_sorted:
-        if tag in test_images_tags[int(img_ids[idx])]:
-            precision_tag += 1
-
-    precision_tag /= precision_k
-    total_precision += precision_tag
 
 total_precision /= len(tags_test_histogram_filtered)
 

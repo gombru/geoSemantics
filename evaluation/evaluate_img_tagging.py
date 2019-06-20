@@ -55,7 +55,7 @@ dist = nn.PairwiseDistance(p=2)
 
 for i, (img_id, img_embedding) in enumerate(img_embeddings.items()):
 
-    if i % 500 == 0 and i > 0:
+    if i % 100 == 0 and i > 0:
         print(str(i) + ": Curr acc at " + str(accuracy_k) + " --> " + str(100*total_accuracy_at_k/i))
     img_id = str(img_id)
     img_np_embedding = np.asarray(img_embedding, dtype=np.float32)
@@ -68,8 +68,23 @@ for i, (img_id, img_embedding) in enumerate(img_embeddings.items()):
     # Sort tags by distance to image
     indices_sorted = np.argsort(distances)[0:accuracy_k] # if distances
 
+    # Compute Accuracy at 1
+    correct = False
+    correct_tag = ''
+    if tags[indices_sorted[0]] in test_images_tags[int(img_id)]:
+        total_accuracy_at_1 += 1
+    # Compute Accuracy at k
+    for idx in indices_sorted:
+        if tags[idx] in test_images_tags[int(img_id)]:
+            correct = True
+            correct_tag = tags[idx]
+            # print("Correct tag: " + tags[idx])
+            total_accuracy_at_k += 1
+            break
+
     # Save img
-    if save_img and random.randint(0,100000) < 50:
+    if save_img and correct and random.randint(0,10) < 1:
+        print("Saving. Correct tag: " + correct_tag)
         if not os.path.isdir(dataset + '/tagging_results/' + model_name + '/' + img_id + '/'):
             os.makedirs(dataset + '/tagging_results/' + model_name + '/' + img_id + '/')
         copyfile('../../../datasets/YFCC100M/test_img/' + img_id + '.jpg', dataset + '/tagging_results/' + model_name + '/' + img_id + '/' + img_id + '.jpg')
@@ -82,14 +97,6 @@ for i, (img_id, img_embedding) in enumerate(img_embeddings.items()):
             for idx in indices_sorted:
                 outfile.write(tags[idx] + ' ')
 
-    # Compute Accuracy at 1
-    if tags[indices_sorted[0]] in test_images_tags[int(img_id)]:
-        total_accuracy_at_1 += 1
-    # Compute Accuracy at k
-    for idx in indices_sorted:
-        if tags[idx] in test_images_tags[int(img_id)]:
-            total_accuracy_at_k += 1
-            break
 
 total_accuracy_at_1 /= len(img_embeddings)
 total_accuracy_at_k /= len(img_embeddings)
