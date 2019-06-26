@@ -2,7 +2,13 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../HateSPic/.idea/HateSPic.iml" filepath="$PROJECT_DIR$/../HateSPic/.idea/HateSPic.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../InstaBarcelona/.idea/InstaBarcelona.iml" filepath="$PROJECT_DIR$/../InstaBarcelona/.idea/InstaBarcelona.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../SocialMediaWeakLabeling/.idea/SocialMediaWeakLabeling.iml" filepath="$PROJECT_DIR$/../SocialMediaWeakLabeling/.idea/SocialMediaWeakLabeling.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/geoSemantics.iml" filepath="$PROJECT_DIR$/.idea/geoSemantics.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../gombru.github.io/.idea/gombru.github.io.iml" filepath="$PROJECT_DIR$/../gombru.github.io/.idea/gombru.github.io.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../pytorchCNN/.idea/pytorchCNN.iml" filepath="$PROJECT_DIR$/../pytorchCNN/.idea/pytorchCNN.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../tagging_test/.idea/tagging_test.iml" filepath="$PROJECT_DIR$/../tagging_test/.idea/tagging_test.iml" />
     </modules>
   </component>
 </project>

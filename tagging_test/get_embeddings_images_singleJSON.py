@@ -18,7 +18,7 @@ batch_size = 200
 workers = 1
 ImgSize = 224
 
-model_name = 'YFCC_NCSL_2ndtraining_epoch_2_ValLoss_0.39.pth'
+model_name = 'YFCC_NCSL_2ndtraining_epoch_16_ValLoss_0.38.pth'
 model_name = model_name.strip('.pth')
 
 gpus = [0]
@@ -31,6 +31,7 @@ if not os.path.exists('results/'):
 output_file_path = 'results/images_embeddings.json'
 output_file = open(output_file_path, "w")
 
+print("Loading model")
 state_dict = torch.load(dataset_folder + '/models/' + model_name + '.pth.tar',
                         map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
 

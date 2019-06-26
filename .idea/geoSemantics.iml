@@ -4,6 +4,11 @@
     <content url="file://$MODULE_DIR$" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="SocialMediaWeakLabeling" />
+    <orderEntry type="module" module-name="HateSPic" />
+    <orderEntry type="module" module-name="gombru.github.io" />
+    <orderEntry type="module" module-name="tagging_test" />
+    <orderEntry type="module" module-name="InstaBarcelona" />
   </component>
   <component name="TestRunnerService">
     <option name="PROJECT_TEST_RUNNER" value="Unittests" />
