@@ -33,17 +33,29 @@ class YFCC_Dataset_Images_Test(Dataset):
         return len(self.img_ids)
 
     def __getitem__(self, idx):
-        img_name = '{}/{}{}'.format(self.root_dir, self.img_ids[idx], '.jpg')
-        # Load and transform image
-        image = Image.open(img_name)
 
-        if self.central_crop != 0:
-            image = image_processing.CenterCrop(image, self.central_crop, self.central_crop)
+        if idx > (2000 * 700):
 
-        im_np = np.array(image, dtype=np.float32)
-        im_np = image_processing.PreprocessImage(im_np)
-        # Build tensors
-        img_tensor = torch.from_numpy(np.copy(im_np))
-        img_id = str(self.img_ids[idx])
+            try:
+                img_name = '{}/{}{}'.format(self.root_dir, self.img_ids[idx], '.jpg')
+                image = Image.open(img_name)
+            except:
+                new_img_name = '../../../ssd2/YFCC100M/train_img/6985418911.jpg'
+                image = Image.open(new_img_name)
+                print("Image not found, using hardcoded")
+
+            if self.central_crop != 0:
+                image = image_processing.CenterCrop(image, self.central_crop, self.central_crop)
+
+            im_np = np.array(image, dtype=np.float32)
+            im_np = image_processing.PreprocessImage(im_np)
+            # Build tensors
+            img_tensor = torch.from_numpy(np.copy(im_np))
+            img_id = str(self.img_ids[idx])
+
+        else:
+            img_tensor = torch.zeros([3,224,224])
+            img_id = '0'
+
 
         return img_id, img_tensor

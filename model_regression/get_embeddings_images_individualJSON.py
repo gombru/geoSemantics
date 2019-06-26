@@ -11,21 +11,21 @@ import json
 import numpy as np
 
 dataset_folder = '../../../hd/datasets/YFCC100M/'
-test_im_dir = '../../../datasets/YFCC100M/test_img/'
-split = 'val.txt'
+test_im_dir = '../../../ssd2/YFCC100M/train_img/'
+split = 'train_filtered.txt'
 
-batch_size = 600
-workers = 6
+batch_size = 700
+workers = 2
 ImgSize = 224
 
-model_name = 'YFCC_NCSL_epoch_15_ValLoss_0.42.pth'
+model_name = 'YFCC_NCSL_2ndtraining_epoch_16_ValLoss_0.38.pth'
 model_name = model_name.strip('.pth')
 
-gpus = [1]
-gpu = 1
-CUDA_VISIBLE_DEVICES = 1
+gpus = [0]
+gpu = 0
+CUDA_VISIBLE_DEVICES = 0
 
-output_folder = dataset_folder + 'img_embeddings/' + model_name + '/' + split.strip('.txt') + '/'
+output_folder = dataset_folder + 'img_embeddings/' + model_name + '/' + split.replace('.txt','') + '/'
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
 
@@ -44,16 +44,22 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, s
 with torch.no_grad():
     model_test.eval()
     for i, (img_id, image) in enumerate(test_loader):
+
+        if i < 2000:
+            print(i)
+            print(img_id[0])
+            continue
+
         image_var = torch.autograd.Variable(image)
         outputs = model_test(image_var)
 
         for idx,embedding in enumerate(outputs):
             out_dict = {}
             out_dict[str(img_id[idx])] = np.array(embedding.cpu()).tolist()
-            with open(output_folder + str(img_id[idx]), 'w') as outfile:
+            with open(output_folder + str(img_id[idx]) + '.json', 'w') as outfile:
                 json.dump(out_dict, outfile)
 
         print(str(i) + ' / ' + str(len(test_loader)))
-
+        print(img_id[0])
 
 print("DONE")

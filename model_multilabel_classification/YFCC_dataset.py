@@ -21,7 +21,6 @@ class YFCC_Dataset(Dataset):
         else:
             self.root_dir = root_dir.replace('/hd/datasets/', '/datasets/')  + 'val_img/'
 
-        # Load GenSim Word2Vec model
         print("Loading tag list ...")
         tags_file = '../../../datasets/YFCC100M/vocab/vocab_words_100k.txt'
         for line in open(tags_file):
@@ -36,13 +35,12 @@ class YFCC_Dataset(Dataset):
 
         # Initialize containers
         self.img_ids = np.zeros(self.num_elements, dtype=np.uint64)
-        self.img_multilabel_targets = np.zeros((self.num_elements,100000), dtype=np.float32)
         self.images_tags = []
 
         # Read data
         print("Reading data ...")
         for i,line in enumerate(open('../../../datasets/YFCC100M/splits/' + split)):
-            if i % 2000000 == 0 and i != 0: print(i)
+            if i % 1000000 == 0 and i != 0: print(i)
             # if i == 100000: break
             data = line.split(';')
             self.img_ids[i] = int(data[0])
@@ -50,7 +48,6 @@ class YFCC_Dataset(Dataset):
             img_tags_indices = []
             for img_tag in img_tags:
                 img_tags_indices.append(self.tags.index(img_tag))
-                self.img_multilabel_targets[i,self.tags.index(img_tag)] = 1
             self.images_tags.append(img_tags_indices)
 
         print("Data read. Set size: " + str(len(self.img_ids)))
@@ -65,7 +62,6 @@ class YFCC_Dataset(Dataset):
         # Load and transform image
         try:
             image = Image.open(img_name)
-            # print("Img+ " + str(self.img_ids[idx]))
         except:
             new_img_name = '../../../ssd2/YFCC100M/train_img/6985418911.jpg'
             print("Img file " + img_name + " not found, using hardcoded " + new_img_name)
@@ -78,7 +74,6 @@ class YFCC_Dataset(Dataset):
                 image = image_processing.Mirror(image)
             im_np = np.array(image, dtype=np.float32)
             im_np = image_processing.PreprocessImage(im_np)
-
         except:
             print("Error in data aumentation with image " + img_name)
             new_img_name = '../../../ssd2/YFCC100M/train_img/6985418911.jpg'
@@ -90,18 +85,20 @@ class YFCC_Dataset(Dataset):
             im_np = image_processing.PreprocessImage(im_np)
 
         # Get target vector (multilabel classification)
-        target = self.img_multilabel_targets[idx,:]
+        # target = np.zeros(100000, dtype=np.float32)
+        # target[self.images_tags[idx]] = 1
+        target_indices = np.ones(15, dtype=np.int)*100000
+        target_indices[0:len(self.images_tags[idx])] = np.array(self.images_tags[idx]).astype(int)
 
         # Select a random image tag just to evaluate precision
         tag = random.choice(self.images_tags[idx])
 
         # Build tensors
         img_tensor = torch.from_numpy(np.copy(im_np))
-
-        target = torch.from_numpy(target)
-
         label = torch.from_numpy(np.array([tag]))
         label = label.type(torch.LongTensor)
+        # target = torch.from_numpy(target)
+        target_indices = torch.from_numpy(target_indices)
 
 
-        return img_tensor, target, label
+        return img_tensor, target_indices, label

@@ -14,12 +14,12 @@ split_train = 'train_filtered.txt'
 split_val = 'val.txt'
 
 ImgSize = 224
-gpus = [3,2,1,0] # [3,2,1,0]
+gpus = [3,2,1] # [3,2,1,0]
 gpu = 3
 workers = 6 # 6 Num of data loading workers
 epochs = 301
 start_epoch = 0 # Useful on restarts
-batch_size = 100 * len(gpus) # Batch size
+batch_size = 500 * len(gpus) # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
 resume = None  # Path to checkpoint top resume training
 plot = True
@@ -27,7 +27,7 @@ best_epoch = 0
 best_loss = 1000
 
 # Optimizer (SGD)
-lr = 1e-3 * len(gpus)
+lr = 5 * len(gpus)
 momentum = 0.9
 weight_decay = 1e-4
 
@@ -69,20 +69,22 @@ val_loader = torch.utils.data.DataLoader(
 plot_data = {}
 plot_data['train_loss'] = zeros(epochs)
 plot_data['train_prec1'] = zeros(epochs)
-plot_data['train_prec5'] = zeros(epochs)
+plot_data['train_prec10'] = zeros(epochs)
+plot_data['train_prec50'] = zeros(epochs)
 plot_data['val_loss'] = zeros(epochs)
 plot_data['val_prec1'] = zeros(epochs)
-plot_data['val_prec5'] = zeros(epochs)
+plot_data['val_prec10'] = zeros(epochs)
+plot_data['val_prec50'] = zeros(epochs)
 plot_data['epoch'] = 0
 it_axes = arange(epochs)
 _, ax1 = subplots()
 ax2 = ax1.twinx()
 ax1.set_xlabel('epoch')
 ax1.set_ylabel('train loss (r), val loss (y)')
-ax2.set_ylabel('train prec1 (b), train prec5 (k), val prec1 (g), val prec5 (m)')
+ax2.set_ylabel('train prec1 (b), train prec10 (k), train prec50 (br), val prec1 (g), val prec10 (m), val prec50 (or)')
 ax2.set_autoscaley_on(False)
-ax1.set_ylim([0, 12])
-ax2.set_ylim([0, 100])
+ax1.set_ylim([0, 0.05])
+ax2.set_ylim([0, 20])
 
 print("Dataset and model ready. Starting training ...")
 
@@ -97,7 +99,7 @@ for epoch in range(start_epoch, epochs):
 
     # Remember best model and save checkpoint
     is_best = plot_data['val_loss'][epoch] < best_loss
-    if is_best and epoch != 0:
+    if is_best:
         print("New best model by loss. Val Loss = " + str(plot_data['val_loss'][epoch]))
         best_loss = plot_data['val_loss'][epoch]
         filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2))
@@ -107,12 +109,16 @@ for epoch in range(start_epoch, epochs):
     if plot:
         ax1.plot(it_axes[0:epoch], plot_data['train_loss'][0:epoch], 'r')
         ax2.plot(it_axes[0:epoch], plot_data['train_prec1'][0:epoch], 'b')
-        ax2.plot(it_axes[0:epoch], plot_data['train_prec5'][0:epoch], 'k')
+        ax2.plot(it_axes[0:epoch], plot_data['train_prec10'][0:epoch], 'k')
+        ax2.plot(it_axes[0:epoch], plot_data['train_prec50'][0:epoch], 'brown')
+
 
 
         ax1.plot(it_axes[0:epoch], plot_data['val_loss'][0:epoch], 'y')
         ax2.plot(it_axes[0:epoch], plot_data['val_prec1'][0:epoch], 'g')
-        ax2.plot(it_axes[0:epoch], plot_data['val_prec5'][0:epoch], 'm')
+        ax2.plot(it_axes[0:epoch], plot_data['val_prec10'][0:epoch], 'm')
+        ax2.plot(it_axes[0:epoch], plot_data['val_prec50'][0:epoch], 'orange')
+
         plt.title(training_id)
         plt.ion()
         plt.grid(True)

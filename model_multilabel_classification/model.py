@@ -1,6 +1,6 @@
 import torch.nn as nn
 import MyResNet
-import torch.nn.functional as F
+import torch
 
 class Model(nn.Module):
 
@@ -10,7 +10,7 @@ class Model(nn.Module):
         ct = 0
         for child in self.cnn.children():
             ct += 1
-            if ct < len(self.cnn.children()) - 1:
+            if ct < len(list(self.cnn.children())):
                 print("Freezing: " + str(child))
                 for param in child.parameters():
                     param.requires_grad = False
@@ -19,6 +19,6 @@ class Model(nn.Module):
 
     def forward(self, image):
         x = self.cnn(image)
-        if not self.training:
-        	x = F.sigmoid(x, dim=1)
+        # if not self.training:
+        # 	x = torch.sigmoid(x)
         return x
