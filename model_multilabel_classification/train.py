@@ -7,7 +7,6 @@ import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
 
-
 def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu):
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -25,17 +24,18 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
         # label get only one of the tags to compute Precision with it
 
         # build target vector form target indices
-        target = torch.zeros([len(target_indices), 100001], dtype=torch.float32).cuda(gpu, async=True)
-        target[:, target_indices] = 1
-        target = target[:, 0:-1]
+        target = torch.zeros([len(target_indices), 100000], dtype=torch.float32).cuda(gpu, async=True)
+        for p in range(0,len(target_indices)):
+            target[p,target_indices[p]] = 1
+
+        # target = target.cuda(gpu, async=True)
+        target_var = torch.autograd.Variable(target).squeeze(1)
+
+        image_var = torch.autograd.Variable(image)
+        label = label.cuda(gpu, async=True)
 
         # measure data loading time
         data_time.update(time.time() - end)
-
-        image_var = torch.autograd.Variable(image)
-        # target = target.cuda(gpu, async=True)
-        label = label.cuda(gpu, async=True)
-        target_var = torch.autograd.Variable(target).squeeze(1)
 
         # compute output
         output = model(image_var)
@@ -65,8 +65,8 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
                   'Prec1 {prec1.val:.3f} ({prec1.avg:.3f})\t'
                   'Prec10 {prec10.val:.3f} ({prec10.avg:.3f})\t'
                   'Prec50 {prec50.val:.3f} ({prec50.avg:.3f})\t'.format(
-                epoch, i, len(train_loader), batch_time=batch_time,
-                data_time=data_time, loss=loss_meter, prec1=prec1_meter, prec10=prec10_meter, prec50=prec50_meter))
+                   epoch, i, len(train_loader), batch_time=batch_time,
+                   data_time=data_time, loss=loss_meter, prec1=prec1_meter, prec10=prec10_meter, prec50=prec50_meter))
 
     plot_data['train_loss'][plot_data['epoch']] = loss_meter.avg
     plot_data['train_prec1'][plot_data['epoch']] = prec1_meter.avg
@@ -90,15 +90,17 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
 
         end = time.time()
         for i, (image, target_indices, label) in enumerate(val_loader):
-            # build target vector form target indices
-            target = torch.zeros([len(target_indices), 100001], dtype=torch.float32).cuda(gpu, async=True)
-            target[:, target_indices] = 1
-            target = target[:, 0:-1]
+
+              # build target vector form target indices
+            target = torch.zeros([len(target_indices), 100000], dtype=torch.float32).cuda(gpu, async=True)
+            for p in range(0,len(target_indices)):
+                target[p,target_indices[p]] = 1
+
+            # target = target.cuda(gpu, async=True)
+            target_var = torch.autograd.Variable(target).squeeze(1)
 
             image_var = torch.autograd.Variable(image)
-            # target = target.cuda(gpu, async=True)
             label = label.cuda(gpu, async=True)
-            target_var = torch.autograd.Variable(target).squeeze(1)
 
             # compute output
             output = model(image_var)
@@ -122,7 +124,7 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
                       'Prec1 {prec1.val:.3f} ({prec1.avg:.3f})\t'
                       'Prec10 {prec10.val:.3f} ({prec10.avg:.3f})\t'
                       'Prec50 {prec50.val:.3f} ({prec50.avg:.3f})'.format(
-                    i, len(val_loader), batch_time=batch_time, loss=loss_meter,
+                       i, len(val_loader), batch_time=batch_time, loss=loss_meter,
                     prec1=prec1_meter, prec10=prec10_meter, prec50=prec50_meter))
 
         plot_data['val_loss'][plot_data['epoch']] = loss_meter.avg
@@ -140,10 +142,8 @@ def save_checkpoint(model, filename, prefix_len):
         os.remove(cur_filename)
     torch.save(model.state_dict(), filename + '.pth.tar')
 
-
 class AverageMeter(object):
     """Computes and stores the average and current value"""
-
     def __init__(self):
         self.reset()
 
@@ -158,7 +158,6 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
-
 
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""

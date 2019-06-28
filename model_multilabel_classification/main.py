@@ -25,9 +25,10 @@ resume = None  # Path to checkpoint top resume training
 plot = True
 best_epoch = 0
 best_loss = 1000
+best_acc = 0
 
 # Optimizer (SGD)
-lr = 5 * len(gpus)
+lr = 6 * len(gpus)
 momentum = 0.9
 weight_decay = 1e-4
 
@@ -83,7 +84,7 @@ ax1.set_xlabel('epoch')
 ax1.set_ylabel('train loss (r), val loss (y)')
 ax2.set_ylabel('train prec1 (b), train prec10 (k), train prec50 (br), val prec1 (g), val prec10 (m), val prec50 (or)')
 ax2.set_autoscaley_on(False)
-ax1.set_ylim([0, 0.05])
+ax1.set_ylim([0, 0.15])
 ax2.set_ylim([0, 20])
 
 print("Dataset and model ready. Starting training ...")
@@ -106,13 +107,21 @@ for epoch in range(start_epoch, epochs):
         prefix_len = len('_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2)))
         train.save_checkpoint(model, filename, prefix_len)
 
+        # Remember best model and save checkpoint
+    is_best = plot_data['val_prec50'][epoch] > best_acc
+    if is_best:
+        print("New best model by Acc. Val Acc at 50 = " + str(plot_data['val_prec50'][epoch]))
+        best_acc = plot_data['val_prec50'][epoch]
+        filename = dataset +'/models/' + training_id + '_ByACC_epoch_' + str(epoch) + '_ValAcc_' + str(round(plot_data['val_prec50'][epoch],2))
+        prefix_len = len('_epoch_' + str(epoch) + '_ValAcc_' + str(round(plot_data['val_prec50'][epoch],2)))
+        train.save_checkpoint(model, filename, prefix_len)
+
     if plot:
+
         ax1.plot(it_axes[0:epoch], plot_data['train_loss'][0:epoch], 'r')
         ax2.plot(it_axes[0:epoch], plot_data['train_prec1'][0:epoch], 'b')
         ax2.plot(it_axes[0:epoch], plot_data['train_prec10'][0:epoch], 'k')
         ax2.plot(it_axes[0:epoch], plot_data['train_prec50'][0:epoch], 'brown')
-
-
 
         ax1.plot(it_axes[0:epoch], plot_data['val_loss'][0:epoch], 'y')
         ax2.plot(it_axes[0:epoch], plot_data['val_prec1'][0:epoch], 'g')

@@ -30,7 +30,7 @@ class YFCC_Dataset(Dataset):
         # Count number of elements
         print("Opening dataset ...")
         self.num_elements = sum(1 for line in open('../../../datasets/YFCC100M/splits/' + split))
-        # self.num_elements = 100000
+        # self.num_elements = 20000
         print("Number of elements in " + split + ": " + str(self.num_elements))
 
         # Initialize containers
@@ -40,8 +40,8 @@ class YFCC_Dataset(Dataset):
         # Read data
         print("Reading data ...")
         for i,line in enumerate(open('../../../datasets/YFCC100M/splits/' + split)):
-            if i % 1000000 == 0 and i != 0: print(i)
-            # if i == 100000: break
+            if i % 500000 == 0 and i != 0: print(i)
+            # if i == 20000: break
             data = line.split(';')
             self.img_ids[i] = int(data[0])
             img_tags = data[1].split(',')
@@ -87,8 +87,9 @@ class YFCC_Dataset(Dataset):
         # Get target vector (multilabel classification)
         # target = np.zeros(100000, dtype=np.float32)
         # target[self.images_tags[idx]] = 1
-        target_indices = np.ones(15, dtype=np.int)*100000
+        target_indices = np.zeros(15, dtype=np.int)
         target_indices[0:len(self.images_tags[idx])] = np.array(self.images_tags[idx]).astype(int)
+        target_indices[len(self.images_tags[idx]):] = int(self.images_tags[idx][0])
 
         # Select a random image tag just to evaluate precision
         tag = random.choice(self.images_tags[idx])
