@@ -7,7 +7,7 @@ import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
 
-def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data):
+def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     loss_meter = AverageMeter()
@@ -17,7 +17,7 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
     model.train()
 
     end = time.time()
-    for i, (img_p, tag_p, lat_p, lon_p, img_n, tag_n, lat_n, lon_n, gpu) in enumerate(train_loader):
+    for i, (img_p, tag_p, lat_p, lon_p, img_n, tag_n, lat_n, lon_n) in enumerate(train_loader):
 
         # measure data loading time
         data_time.update(time.time() - end)
@@ -78,7 +78,7 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
         model.eval()
 
         end = time.time()
-        for i, (img_p, tag_p, lat_p, lon_p, img_n, tag_n, lat_n, lon_n, gpu) in enumerate(val_loader):
+        for i, (img_p, tag_p, lat_p, lon_p, img_n, tag_n, lat_n, lon_n) in enumerate(val_loader):
 
             img_p_var = torch.autograd.Variable(img_p)
             tag_p_var = torch.autograd.Variable(tag_p)

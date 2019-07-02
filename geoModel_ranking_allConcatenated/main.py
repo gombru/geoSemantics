@@ -9,20 +9,20 @@ from pylab import zeros, arange, subplots, plt, savefig
 
 # Config
 training_id = 'geoModel_ranking_allConcatenated'
-dataset = '../../../hd/datasets/YFCC100M/'
+dataset = '../../../datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
 split_val = 'val.txt'
 
-img_backbone_model = 'YFCC_NCSL_epoch_15_ValLoss_0.42.pth'
+img_backbone_model = 'YFCC_NCSL_2ndtraining_epoch_16_ValLoss_0.38'
 
 margin = 1
 
-gpus = [3]
-gpu = 3
-workers = 6 # Num of data loading workers
+gpus = [0]
+gpu = 0
+workers = 0 # 8 Num of data loading workers
 epochs = 301
 start_epoch = 0 # Useful on restarts
-batch_size = 100 * len(gpus) # Batch size
+batch_size = 1024 # 8 * 1024 * len(gpus) # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
 resume = None  # Path to checkpoint top resume training
 plot = True
@@ -31,12 +31,12 @@ best_correct_pairs = 0
 best_loss = 1000
 
 # Optimizer (SGD)
-lr = 1e-2 * len(gpus) * 2
+lr = 0.1 # 8 * 0.1 * len(gpus)
 momentum = 0.9
 weight_decay = 1e-4
 
 # Loss
-criterion = nn.MarginRankingLoss(margin=1).cuda(gpu)
+criterion = nn.MarginRankingLoss(margin=margin).cuda(gpu)
 # Model
 model = model.Model(margin=margin).cuda(gpu)
 model = torch.nn.DataParallel(model, device_ids=gpus)
@@ -72,7 +72,7 @@ plot_data = {}
 plot_data['train_loss'] = zeros(epochs)
 plot_data['train_correct_pairs'] = zeros(epochs)
 plot_data['val_loss'] = zeros(epochs)
-plot_data['val_correct_pairss'] = zeros(epochs)
+plot_data['val_correct_pairs'] = zeros(epochs)
 plot_data['epoch'] = 0
 it_axes = arange(epochs)
 _, ax1 = subplots()

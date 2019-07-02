@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import MyResNet
 import math
 
 class Model(nn.Module):
@@ -51,7 +50,8 @@ class MMNet(nn.Module):
 
         self.fc1 = BasicFC(602, 512)
         self.fc2 = BasicFC(512, 512)
-        self.fc3 = nn.Linear(512, 1)
+        self.fc3 = BasicFC(512, 512)
+        self.fc4 = nn.Linear(512, 1)
 
 
     def forward(self, img, tag, lat, lon):
@@ -65,7 +65,7 @@ class MMNet(nn.Module):
         x = self.fc1(x)
         x = self.fc2(x)
         x = self.fc3(x)
-
+        x = self.fc4(x)
 
         return x
 
