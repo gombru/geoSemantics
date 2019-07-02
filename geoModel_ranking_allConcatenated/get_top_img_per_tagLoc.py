@@ -62,8 +62,8 @@ longitudes_tensor = np.zeros([num_query_pairs,1],  dtype=np.float32)
 
 for i, line in enumerate(open('../../../datasets/YFCC100M/splits/' + split)):
     if i % 100000 == 0 and i != 0: print(i)
-    if i == num_query_pairs:
-        print("Stopping at 1000")
+    if i == 500000:
+        print("Stopping at: " + str(i))
         break
     data = line.split(';')
     tag = random.choice(data[1].split(','))
