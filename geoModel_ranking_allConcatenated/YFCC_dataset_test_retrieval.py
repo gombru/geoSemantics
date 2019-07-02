@@ -23,8 +23,6 @@ class YFCC_Dataset(Dataset):
 
         # Initialize containers
         self.img_ids = np.zeros(self.num_elements, dtype=np.uint64)
-        self.latitudes = np.zeros(self.num_elements, dtype=np.float32)
-        self.longitudes = np.zeros(self.num_elements, dtype=np.float32)
 
         # Container for img embeddings
         self.img_embeddings = np.zeros((self.num_elements, 300), dtype=np.float32)
@@ -38,11 +36,6 @@ class YFCC_Dataset(Dataset):
             if i == 100: break
             data = line.split(';')
             self.img_ids[i] = int(data[0])
-            self.latitudes[i] = float(data[4])
-            self.longitudes[i] = float(data[5])
-            # Coordinates normalization
-            self.latitudes[i] = (self.latitudes[i] + 90) / 180
-            self.longitudes[i] = (self.longitudes[i] + 180) / 360
             try:
                 json_name = '{}{}{}'.format(self.img_embeddings_dir, self.img_ids[i], '.json')
                 img_e = json.load(open(json_name))
@@ -51,35 +44,22 @@ class YFCC_Dataset(Dataset):
             except:
                 errors += 1
                 self.img_embeddings[i, :] = np.zeros(300, dtype=np.float32)
-                self.latitudes[i] = 0.0
-                self.longitudes[i] = 0.0
 
         print("Data read. Set size: " + str(len(self.img_ids)))
         print("Correct: " + str(correct) + "; Errors: " + str(errors))
 
-        print("Latitudes min and max: " + str(min(self.latitudes)) + ' ; ' + str(max(self.latitudes)))
-        print("Longitudes min and max: " + str(min(self.longitudes)) + ' ; ' + str(max(self.longitudes)))
+
 
     def __len__(self):
         return len(self.img_ids)
 
-    def __getwordembedding__(self, tag):
-        tag = tag.lower()
-        tag_embedding = np.asarray(self.text_model[tag], dtype=np.float32)
-        return tag_embedding
-
-
     def __getitem__(self, idx):
 
         img = self.img_embeddings[idx, :]
-        lat = self.latitudes[idx]
-        lon = self.longitudes[idx]
 
         # Build tensors
         img = torch.from_numpy(img)
-        lat = torch.from_numpy(np.array([lat]))
-        lon = torch.from_numpy(np.array([lon]))
 
         img_id = str(self.img_ids[idx])
 
-        return img_id, img, lat, lon
+        return img_id, img

@@ -7,20 +7,21 @@ class Model(nn.Module):
 
     def __init__(self):
         super(Model, self).__init__()
-        self.extra_net = MMNet(self.c)
+        self.extra_net = MMNet()
 
     def forward(self, img, tag, lat, lon):
-        # Here tag is [1x100kx300]
-        # Others are [1xk]
-        print(img.shape)
-        print(tag.shape)
-        score = self.extra_net(img, tag, lat, lon)
+        # Here tag is [500kx300], lat and lon [500kx1]
+        # img is [1x300], so I expand it
+        img_batch = torch.zeros([len(tag), 300], dtype=torch.float32).cuda()
+        img_batch[:,:] = img
+
+        score = self.extra_net(img_batch, tag, lat, lon)
         return score
 
 
 class MMNet(nn.Module):
 
-    def __init__(self, c):
+    def __init__(self):
         super(MMNet, self).__init__()
 
         self.fc1 = BasicFC(602, 512)
