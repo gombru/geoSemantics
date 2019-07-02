@@ -14,12 +14,12 @@ split_train = 'train_filtered.txt'
 split_val = 'val.txt'
 
 ImgSize = 224
-gpus = [3,2,1,0] # [3,2,1,0]
+gpus = [3,2,1] # [3,2,1,0]
 gpu = 3
-workers = 12 # 6 Num of data loading workerss
+workers = 10 # 6 Num of data loading workerss
 epochs = 301
 start_epoch = 0 # Useful on restarts
-batch_size = 50 * len(gpus) # Batch size
+batch_size = 96 * len(gpus) # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
 resume = None  # Path to checkpoint top resume training
 plot = True
@@ -27,7 +27,7 @@ best_epoch = 0
 best_loss = 1000
 
 # Optimizer (SGD)
-lr = 1e-3 * len(gpus)
+lr = 2*1e-2 * len(gpus)
 momentum = 0.9
 weight_decay = 1e-4
 
@@ -121,6 +121,7 @@ for epoch in range(start_epoch, epochs):
 
         # Save graph to disk
         if epoch % 1 == 0 and epoch != 0:
-            title = dataset +'/training/' + training_id + '_epoch_' + str(epoch) + '.png'
+            # title = dataset +'/training/' + training_id + '_epoch_' + str(epoch) + '.png'
+            title = dataset +'/training/' + training_id + '.png'
             savefig(title, bbox_inches='tight')
 

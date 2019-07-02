@@ -11,11 +11,11 @@ import json
 import numpy as np
 
 dataset_folder = '../../../hd/datasets/YFCC100M/'
-test_im_dir = '../../../ssd2/YFCC100M/train_img/'
-split = 'train_filtered.txt'
+test_im_dir = '../../../datasets/YFCC100M/val_img/'
+split = 'val.txt'
 
 batch_size = 700
-workers = 2
+workers = 6
 ImgSize = 224
 
 model_name = 'YFCC_NCSL_2ndtraining_epoch_16_ValLoss_0.38.pth'
@@ -25,14 +25,16 @@ gpus = [0]
 gpu = 0
 CUDA_VISIBLE_DEVICES = 0
 
-output_folder = dataset_folder + 'img_embeddings/' + model_name + '/' + split.replace('.txt','') + '/'
+output_folder = dataset_folder + 'img_embeddings_single/' + model_name + '/'
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
+output_file = open(output_folder + split, 'w')
+# output_file = open(output_folder + split.strip('.txt') + '.json', 'w')
+# out_dict = {}
 
 
 state_dict = torch.load(dataset_folder + '/models/' + model_name + '.pth.tar',
-                        map_location={'cuda:0':'cuda:1', 'cuda:2':'cuda:1', 'cuda:3':'cuda:1'})
-
+                        map_location={'cuda:1': 'cuda:0', 'cuda:2': 'cuda', 'cuda:3': 'cuda:0'})
 
 model_test = model.Model()
 model_test = torch.nn.DataParallel(model_test, device_ids=gpus).cuda(gpu)
@@ -45,21 +47,17 @@ with torch.no_grad():
     model_test.eval()
     for i, (img_id, image) in enumerate(test_loader):
 
-        if i < 2000:
-            print(i)
-            print(img_id[0])
-            continue
-
         image_var = torch.autograd.Variable(image)
         outputs = model_test(image_var)
 
-        for idx,embedding in enumerate(outputs):
-            out_dict = {}
-            out_dict[str(img_id[idx])] = np.array(embedding.cpu()).tolist()
-            with open(output_folder + str(img_id[idx]) + '.json', 'w') as outfile:
-                json.dump(out_dict, outfile)
+        for idx, embedding in enumerate(outputs):
+            img_em_str = ','.join(map(str, np.array(embedding.cpu()).tolist()))
+            # out_dict[str(img_id[idx])] = np.array(embedding.cpu()).tolist()
+            out_str = str(img_id[idx]) + ',' + img_em_str + '\n'
+            output_file.write(out_str)
 
         print(str(i) + ' / ' + str(len(test_loader)))
-        print(img_id[0])
 
+# print("Saving embeddings")
+# json.dump(out_dict, output_file)
 print("DONE")

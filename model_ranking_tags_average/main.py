@@ -15,11 +15,11 @@ split_val = 'val.txt'
 
 margin = 1
 norm_degree = 2 # The norm degree for pairwise distance
-embedding_dims= 1024
+embedding_dims= 300
 
 ImgSize = 224
-gpus = [3,2,1,0]
-gpu = 3
+gpus = [0]
+gpu = 0
 workers = 6 # Num of data loading workers
 epochs = 301
 start_epoch = 0 # Useful on restarts
@@ -32,7 +32,7 @@ best_correct_triplets = 0
 best_loss = 1000
 
 # Optimizer (SGD)
-lr = 1e-3 * len(gpus)
+lr = 0.8 * 1e-1 * len(gpus)
 momentum = 0.9
 weight_decay = 1e-4
 
@@ -93,10 +93,10 @@ for epoch in range(start_epoch, epochs):
     plot_data['epoch'] = epoch
 
     # Train for one epoch
-    plot_data = train.train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data)
+    plot_data = train.train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu)
 
     # Evaluate on validation set
-    plot_data = train.validate(val_loader, model, criterion, print_freq, plot_data)
+    plot_data = train.validate(val_loader, model, criterion, print_freq, plot_data, gpu)
 
     # Remember best model and save checkpoint
     is_best = plot_data['val_loss'][epoch] < best_loss

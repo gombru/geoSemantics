@@ -32,7 +32,7 @@ class YFCC_Dataset(Dataset):
         # Count number of elements
         print("Opening dataset ...")
         self.num_elements = sum(1 for line in open('../../../datasets/YFCC100M/splits/' + split))
-        self.num_elements = 100
+        # self.num_elements = 1000
         print("Number of elements in " + split + ": " + str(self.num_elements))
 
         # Initialize containers
@@ -42,8 +42,8 @@ class YFCC_Dataset(Dataset):
         # Read data
         print("Reading data ...")
         for i,line in enumerate(open('../../../datasets/YFCC100M/splits/' + split)):
-            if i % 2000000 == 0 and i != 0: print(i)
-            if i == 100: break
+            if i % 100000 == 0 and i != 0: print(i)
+            # if i == 1000: break
             data = line.split(';')
             self.img_ids[i] = int(data[0])
             tags_array = data[1].split(',')

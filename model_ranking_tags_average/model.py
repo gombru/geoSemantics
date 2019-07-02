@@ -5,9 +5,12 @@ import torch.nn.functional as F
 
 class Model(nn.Module):
 
-    def __init__(self):
+    def __init__(self, embedding_dims, margin, norm_degree):
         super(Model, self).__init__()
-        self.cnn = MyResNet.resnet50(pretrained=True, num_classes=300)
+        self.cnn = MyResNet.resnet50(pretrained=True, num_classes=embedding_dims)
+        self.c = {}
+        self.c['margin'] = margin
+        self.c['norm_degree'] = norm_degree
 
     def forward(self, image, tags_p, tags_n):
         x = self.cnn(image)

@@ -7,7 +7,7 @@ import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
 
-def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data):
+def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     loss_meter = AverageMeter()
@@ -21,6 +21,9 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
 
         # measure data loading time
         data_time.update(time.time() - end)
+
+        tags_pos = tags_pos.cuda(gpu, async=True)
+        tags_neg = tags_neg.cuda(gpu, async=True)
 
         image_var = torch.autograd.Variable(image)
         tags_pos_var = torch.autograd.Variable(tags_pos)
@@ -60,7 +63,7 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
     return plot_data
 
 
-def validate(val_loader, model, criterion, print_freq, plot_data):
+def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
     with torch.no_grad():
 
         batch_time = AverageMeter()
@@ -72,6 +75,9 @@ def validate(val_loader, model, criterion, print_freq, plot_data):
 
         end = time.time()
         for i, (image, tags_pos, tags_neg) in enumerate(val_loader):
+
+            tags_pos = tags_pos.cuda(gpu, async=True)
+            tags_neg = tags_neg.cuda(gpu, async=True)
 
             image_var = torch.autograd.Variable(image)
             tags_pos_var = torch.autograd.Variable(tags_pos)

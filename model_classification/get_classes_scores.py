@@ -7,7 +7,6 @@ import json
 import numpy as np
 import YFCC_dataset_test
 
-# THIS CODE IS NOT READY
 
 dataset_folder = '../../../hd/datasets/YFCC100M/'
 test_im_dir = '../../../datasets/YFCC100M/test_img/'

@@ -20,7 +20,7 @@ batch_size = 1
 workers = 3
 ImgSize = 224
 
-num_query_pairs = 1000
+num_query_pairs = 500000
 
 model_name = 'geoModel_to_test'
 model_name = model_name.replace('.pth','')
@@ -46,7 +46,7 @@ test_dataset = YFCC_dataset_test_retrieval.YFCC_Dataset(dataset_folder, img_back
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=workers,
                                           pin_memory=True)
 
-top_img_per_tagLoc_scores = torch.zeros([num_query_pairs,10],  dtype=torch.float32).cuda(gpu)
+top_img_per_tagLoc_scores = torch.zeros([num_query_pairs,10],  dtype=torch.float32).cuda(gpu) - 100
 top_img_per_tagLoc_indices = torch.zeros([num_query_pairs,10], dtype=torch.int64).cuda(gpu)
 
 print("Generating query tag-location pairs")
@@ -56,13 +56,13 @@ text_model_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
 text_model = json.load(open(text_model_path))
 print("Reading tags and locations ...")
 query_tags_names = []
-query_tags_tensor = torch.zeros([num_query_pairs,300],  dtype=torch.float32)
-latitudes_tensor = torch.zeros([num_query_pairs,1],  dtype=torch.float32)
-longitudes_tensor = torch.zeros([num_query_pairs,1],  dtype=torch.float32)
+query_tags_tensor = np.zeros([num_query_pairs,300],  dtype=np.float32)
+latitudes_tensor = np.zeros([num_query_pairs,1],  dtype=np.float32)
+longitudes_tensor = np.zeros([num_query_pairs,1],  dtype=np.float32)
 
 for i, line in enumerate(open('../../../datasets/YFCC100M/splits/' + split)):
     if i % 100000 == 0 and i != 0: print(i)
-    if i == 1000:
+    if i == num_query_pairs:
         print("Stopping at 1000")
         break
     data = line.split(';')
@@ -79,30 +79,29 @@ for i, line in enumerate(open('../../../datasets/YFCC100M/splits/' + split)):
     latitudes_tensor[i,:] = lat
     longitudes_tensor[i,:] = lon
 
-query_tags_tensor.cuda()
-latitudes_tensor.cuda()
-longitudes_tensor.cuda()
+query_tags_tensor = torch.from_numpy(query_tags_tensor).cuda()
+latitudes_tensor = torch.from_numpy(latitudes_tensor).cuda()
+longitudes_tensor = torch.from_numpy(longitudes_tensor).cuda()
 
 with torch.no_grad():
     model_test.eval()
     for i, (img_id, image) in enumerate(test_loader):
 
         image_var = torch.autograd.Variable(image)
-        outputs = model_test_retrieval(image_var, query_tags_tensor, latitudes_tensor, longitudes_tensor)
-
-        for idx,scores in enumerate(outputs):
-            values_to_replace, indices_to_replace = top_img_per_tagLoc_scores.min(dim=1)
-            replacing_flags = scores > values_to_replace
-
-            top_img_per_tagLoc_indices[replacing_flags, indices_to_replace[replacing_flags]] = float(img_id[idx])
-            top_img_per_tagLoc_scores[replacing_flags, indices_to_replace[replacing_flags]] = scores[replacing_flags]
+        scores = model_test(image_var, query_tags_tensor, latitudes_tensor, longitudes_tensor)
+        scores = scores.squeeze(-1)
+        values_to_replace, indices_to_replace = top_img_per_tagLoc_scores.min(dim=1)
+        replacing_flags = scores > values_to_replace
+        top_img_per_tagLoc_indices[replacing_flags, indices_to_replace[replacing_flags]] = float(img_id[0])
+        top_img_per_tagLoc_scores[replacing_flags, indices_to_replace[replacing_flags]] = scores[replacing_flags]
 
         print(str(i) + ' / ' + str(len(test_loader)))
 
 print("Generating results")
 results = {}
-for i in range(0,100000):
-    results[i] = top_img_per_tagLoc_indices[i,:].cpu().detach().numpy().astype(int).tolist()
+for i in range(0,num_query_pairs):
+    key = query_tags_names[i] + ',' + str(latitudes_tensor[i,0].cpu().item()) + ',' + str(longitudes_tensor[i,0].cpu().item())
+    results[key] = top_img_per_tagLoc_indices[i,:].cpu().detach().numpy().astype(int).tolist()
 
 print("Writing results")
 json.dump(results, output_file)

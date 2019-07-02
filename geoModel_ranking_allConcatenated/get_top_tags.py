@@ -2,7 +2,7 @@
 
 import os
 import torch.utils.data
-import model_test_tagging
+import model_test
 import json
 import numpy as np
 import YFCC_dataset_test_tagging
@@ -32,7 +32,7 @@ state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.t
                         map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
 
 
-model_test = model_test_tagging.Model()
+model_test = model_test.Model()
 model_test = torch.nn.DataParallel(model_test, device_ids=gpus).cuda(gpu)
 model_test.load_state_dict(state_dict, strict=False)
 
