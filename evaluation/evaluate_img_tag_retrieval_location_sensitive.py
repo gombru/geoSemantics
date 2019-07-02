@@ -83,8 +83,8 @@ for i, (pair_info, cur_tag_top_img) in enumerate(top_img_per_tag.items()):
 
     d = pair_info.split(',')
     cur_tag = d[0]
-    cur_lat = float(d[1])
-    cur_lon = float(d[2])
+    cur_lat = float(d[1]) * 180 - 90 # + 90) / 180
+    cur_lon = float(d[2]) * 360 -  180 #  180) / 360
 
     if cur_tag not in tags_test_histogram_filtered:
         ignored+=1
@@ -93,14 +93,14 @@ for i, (pair_info, cur_tag_top_img) in enumerate(top_img_per_tag.items()):
     used+=1
 
     if i % 100 == 0 and i > 0:
-        print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*total_precision/i))
+        print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*precisions[0]/i))
 
 
     # Compute Precision at k
     correct = False
     precisions_tag = np.zeros(len(granularities), dtype=np.float32)
     for top_img_idx in cur_tag_top_img:
-        if tag in test_images_tags[int(top_img_idx)]:
+        if cur_tag in test_images_tags[int(top_img_idx)]:
             # The image has query tag. Now check its location!
             results = check_location(cur_lat, cur_lon, test_images_latitudes[int(top_img_idx)], test_images_longitudes[int(top_img_idx)])
             for r_i,r in enumerate(results):
