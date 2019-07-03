@@ -12,29 +12,25 @@ class YFCC_Dataset(Dataset):
     def __init__(self, root_dir, img_backbone_model, split):
 
         self.root_dir = root_dir
-        self.img_embeddings_dir = self.root_dir + 'img_embeddings/' + img_backbone_model + '/test/'
         self.split = split
+        self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + img_backbone_model + '/test.txt'
 
         # Count number of elements
         print("Opening dataset ...")
         self.num_elements = sum(1 for line in open(self.root_dir + 'splits/' + split))
-        self.num_elements = 100
+        # self.num_elements = 100
         print("Number of elements in " + split + ": " + str(self.num_elements))
 
         # Initialize containers
         self.img_ids = np.zeros(self.num_elements, dtype=np.uint64)
         self.latitudes = np.zeros(self.num_elements, dtype=np.float32)
         self.longitudes = np.zeros(self.num_elements, dtype=np.float32)
-
-        # Container for img embeddings
         self.img_embeddings = np.zeros((self.num_elements, 300), dtype=np.float32)
 
         # Read data
-        print("Reading data ...")
-        correct = 0
-        errors = 0
+        print("Reading split data ...")
         for i, line in enumerate(open(self.root_dir + 'splits/' + split)):
-            if i % 100000 == 0 and i != 0: print(i)
+            if i % 2000000 == 0 and i != 0: print(i)
             if i == 100: break
             data = line.split(';')
             self.img_ids[i] = int(data[0])
@@ -43,22 +39,23 @@ class YFCC_Dataset(Dataset):
             # Coordinates normalization
             self.latitudes[i] = (self.latitudes[i] + 90) / 180
             self.longitudes[i] = (self.longitudes[i] + 180) / 360
-            try:
-                json_name = '{}{}{}'.format(self.img_embeddings_dir, self.img_ids[i], '.json')
-                img_e = json.load(open(json_name))
-                self.img_embeddings[i, :] = np.asarray(img_e[str(self.img_ids[i])], dtype=np.float32)
-                correct += 1
-            except:
-                errors += 1
-                self.img_embeddings[i, :] = np.zeros(300, dtype=np.float32)
-                self.latitudes[i] = 0.0
-                self.longitudes[i] = 0.0
 
         print("Data read. Set size: " + str(len(self.img_ids)))
-        print("Correct: " + str(correct) + "; Errors: " + str(errors))
-
         print("Latitudes min and max: " + str(min(self.latitudes)) + ' ; ' + str(max(self.latitudes)))
-        print("Longitudes min and max: " + str(min(self.longitudes)) + ' ; ' + str(max(self.longitudes)))
+
+        print("Reading image embeddings")
+        img_em_c = 0
+        for i, line in enumerate(open(self.img_embeddings_path)):
+            if i % 2000000 == 0 and i != 0: print(i)
+            # if i == 10000: break
+            img_em_c+=1
+            d = line.split(',')
+            img_id = int(d[0])
+            img_idx, = np.where(self.img_ids == img_id)
+            self.img_embeddings[img_idx, :] = np.asarray(d[1:], dtype=np.float32)
+
+        print("Img embeddings loaded: " + str(img_em_c))
+
 
     def __len__(self):
         return len(self.img_ids)

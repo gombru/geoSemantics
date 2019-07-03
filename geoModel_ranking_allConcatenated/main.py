@@ -8,7 +8,7 @@ import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Config
-training_id = 'geoModel_ranking_allConcatenated'
+training_id = 'geoModel_ranking_allConcatenated_randomTriplets'
 dataset = '../../../datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
 split_val = 'val.txt'
@@ -22,7 +22,7 @@ gpu = 0
 workers = 0 # 8 Num of data loading workers
 epochs = 301
 start_epoch = 0 # Useful on restarts
-batch_size = 1024 # 8 * 1024 * len(gpus) # Batch size
+batch_size = 8 * 1024 * len(gpus) # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
 resume = None  # Path to checkpoint top resume training
 plot = True
@@ -31,7 +31,7 @@ best_correct_pairs = 0
 best_loss = 1000
 
 # Optimizer (SGD)
-lr = 0.1 # 8 * 0.1 * len(gpus)
+lr = 8 * 0.1 * len(gpus)
 momentum = 0.9
 weight_decay = 1e-4
 
