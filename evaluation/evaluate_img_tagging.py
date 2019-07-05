@@ -5,6 +5,7 @@
 import aux
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import random
 from shutil import  copyfile
 import os
@@ -26,6 +27,8 @@ save_img = False # Save some random image tagging results
 measure = 'dotP' # 'distance'
 
 distance_norm = 2 # 2
+if measure == 'distance':
+    print("Using pairwise distance with norm: " + str(distance_norm))
 
 normalize = False # Normalize img embeddings and tag embeddings using L2 norm
 print("Normalize tags and img embeddings: " + str(normalize))
@@ -41,7 +44,6 @@ if normalize:
     print("Using L2 normalization on img AND tag embeddings")
 
 print("Puting tags embeddings in a tensor")
-# Put img embeddings in a tensor
 tags_embeddings_tensor = torch.zeros([len(tags_embeddings), embedding_dim], dtype=torch.float32).cuda()
 tags = []
 for i,(tag, tag_embedding) in enumerate(tags_embeddings.items()):
@@ -76,6 +78,7 @@ for i, (img_id, img_embedding) in enumerate(img_embeddings.items()):
 
     elif measure == 'dotP':
         products = tags_embeddings_tensor.mm(img_embeddings_tensor.reshape(1,-1).t()).view(-1)
+        products = F.softmax(products, dim=0)
         indices_sorted = np.array(products.sort(descending=True)[1][0:accuracy_k].cpu())
 
     else:
