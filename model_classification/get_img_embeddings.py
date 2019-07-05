@@ -16,7 +16,7 @@ batch_size = 700
 workers = 6
 ImgSize = 224
 
-model_name = 'YFCC_MCLL_epoch_6_ValLoss_7.76.pth'
+model_name = 'YFCC_MCLL_epoch_3_ValLoss_7.55'
 model_name = model_name.strip('.pth')
 
 gpus = [0]

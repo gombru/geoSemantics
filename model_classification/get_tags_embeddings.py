@@ -6,7 +6,7 @@ import model
 import json
 import numpy as np
 
-dataset_folder = '../../../datasets/YFCC100M/'
+dataset_folder = '../../../hd/datasets/YFCC100M/'
 model_name = 'YFCC_MCLL_epoch_3_ValLoss_7.55'
 model_name = model_name.strip('.pth')
 
@@ -34,9 +34,9 @@ for line in open(tags_file):
     tags.append(line.replace('\n', ''))
 
 tag_embeddings = {}
-weights = model_test.module.output_layer.weight.shape
+weights = model_test.module.output_layer.weight
 for tag_idx, tag in enumerate(tags):
-    tag_embeddings[tag] = np.array(weights[tag_idx,:].cpu()).tolist()
+	tag_embeddings[tag] = np.array(weights[tag_idx,:].detach().cpu()).tolist()
 
 
 print("Writing results")

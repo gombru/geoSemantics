@@ -16,11 +16,11 @@ batch_size = 600
 workers = 3
 ImgSize = 224
 
-model_name = 'YFCC_MCLL_epoch_6_ValLoss_7.76.pth'
+model_name = 'YFCC_MCLL_epoch_3_ValLoss_7.55'
 model_name = model_name.strip('.pth')
 
-gpus = [3]
-gpu = 3
+gpus = [0]
+gpu = 0
 # CUDA_VISIBLE_DEVICES = 1,2
 
 
@@ -31,7 +31,7 @@ output_file_path = dataset_folder + 'results/' + model_name + '/tags_top_img.jso
 output_file = open(output_file_path, "w")
 
 state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.tar',
-                        map_location={'cuda:0':'cuda:1', 'cuda:2':'cuda:1', 'cuda:3':'cuda:1'})
+                        map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
 
 
 model_test = model.Model()
@@ -42,7 +42,7 @@ test_dataset = YFCC_dataset_test.YFCC_Dataset_Images_Test(test_im_dir, split, ce
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=workers,
                                           pin_memory=True)
 
-top_img_per_scores = torch.zeros([100000,10],  dtype=torch.float32).cuda(gpu)
+top_img_per_scores = torch.zeros([100000,10],  dtype=torch.float32).cuda(gpu) - 1000
 top_img_per_tag_indices = torch.zeros([100000,10], dtype=torch.int64).cuda(gpu)
 
 

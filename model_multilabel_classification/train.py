@@ -137,9 +137,9 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
 
 def save_checkpoint(model, filename, prefix_len):
     print("Saving Checkpoint")
-    for cur_filename in glob.glob(filename[:-prefix_len] + '*'):
-        print(cur_filename)
-        os.remove(cur_filename)
+    # for cur_filename in glob.glob(filename[:-prefix_len] + '*'):
+    #     print(cur_filename)
+    #     os.remove(cur_filename)
     torch.save(model.state_dict(), filename + '.pth.tar')
 
 class AverageMeter(object):

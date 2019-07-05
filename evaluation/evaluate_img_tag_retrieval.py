@@ -14,19 +14,24 @@ import json
 import numpy as np
 
 dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'YFCC_NCSL_epoch_15_ValLoss_0.42'
+model_name = 'YFCC_MCLL_epoch_3_ValLoss_7.55'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
-img_embeddings_path = dataset + 'results/' + model_name + '/images_test.json'
-# tags_embeddings_path = dataset + 'results/' + model_name + '/tags.json'
+img_embeddings_path = dataset + 'results/' + model_name + '/images_embeddings_test.json'
+tags_embeddings_path = dataset + 'results/' + model_name + '/tags_embeddings.json'
 # If using GloVe embeddings directly
-print("Using GloVe embeddings")
-tags_embeddings_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
+# print("Using GloVe embeddings")
+# tags_embeddings_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
 embedding_dim = 300
 precision_k = 10  # Compute precision at k
-save_img = True  # Save some random image retrieval results
+save_img = False  # Save some random image retrieval results
 
-normalize = True # Normalize img embeddings and tag embeddings using L2 norm
+measure =  'dotP' # 'distance'
 
+distance_norm = 2 # 2
+print("Using pairwise distance with norm: " + str(distance_norm))
+
+normalize = False # Normalize img embeddings and tag embeddings using L2 norm
+print("Normalize tags and img embeddings: " + str(normalize))
 
 print("Reading tags embeddings ...")
 tags_embeddings = json.load(open(tags_embeddings_path))
@@ -71,7 +76,7 @@ for i, (img_id, img_embedding) in enumerate(img_embeddings.items()):
 del img_embeddings
 
 print("Starting per-tag evaluation")
-pdist = nn.PairwiseDistance(p=2)
+dist = nn.PairwiseDistance(p=distance_norm)
 total_precision = 0.0
 for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()):
     if i % 100 == 0 and i > 0:
@@ -82,11 +87,22 @@ for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()
         tag_np_embedding /= np.linalg.norm(tag_np_embedding)
 
     tag_embedding_tensor = torch.from_numpy(tag_np_embedding).cuda()
-    distances = pdist(img_embeddings_tensor, tag_embedding_tensor)
-    distances = np.array(distances.cpu())
 
-    # Sort images by distance to tag
-    indices_sorted = np.argsort(distances)[0:precision_k]
+    # distances = dist(img_embeddings_tensor, tag_embedding_tensor)
+    # distances = np.array(distances.cpu())
+    # # Sort images by distance to tag
+    # indices_sorted = np.argsort(distances)[0:precision_k]
+
+    if measure == 'distance':
+        distances = dist(img_embeddings_tensor, tag_embedding_tensor)
+        indices_sorted = np.array(distances.sort(descending=False)[1][0:precision_k].cpu())
+
+    elif measure == 'dotP':
+        products = img_embeddings_tensor.mm(tag_embedding_tensor.reshape(1,-1).t()).view(-1)
+        indices_sorted = np.array(products.sort(descending=True)[1][0:precision_k].cpu())
+    else:
+        print("Measure not found: " + str(measure))
+        break
 
     # Compute Precision at k
     correct = False

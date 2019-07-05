@@ -19,10 +19,10 @@ margin = 1
 
 gpus = [0]
 gpu = 0
-workers = 0 # 8 Num of data loading workers
+workers = 16 # 8 Num of data loading workers
 epochs = 301
 start_epoch = 0 # Useful on restarts
-batch_size = 8 * 1024 * len(gpus) # Batch size
+batch_size = 1024 # 1024 # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
 resume = None  # Path to checkpoint top resume training
 plot = True
@@ -31,7 +31,7 @@ best_correct_pairs = 0
 best_loss = 1000
 
 # Optimizer (SGD)
-lr = 8 * 0.1 * len(gpus)
+lr = 0.1 # 0.1
 momentum = 0.9
 weight_decay = 1e-4
 

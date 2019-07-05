@@ -30,7 +30,7 @@ CUDA_VISIBLE_DEVICES = 1
 if not os.path.exists(dataset_folder + 'results/' + model_name):
     os.makedirs(dataset_folder + 'results/' + model_name)
 
-output_file_path = dataset_folder + 'results/' + model_name + '/images_test.json'
+output_file_path = dataset_folder + 'results/' + model_name + '/images_embeddings_test.json'
 output_file = open(output_file_path, "w")
 
 state_dict = torch.load(dataset_folder + '/models/' + model_name + '.pth.tar',

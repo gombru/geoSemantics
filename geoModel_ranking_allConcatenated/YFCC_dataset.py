@@ -38,7 +38,7 @@ class YFCC_Dataset(Dataset):
         # Count number of elements
         print("Opening dataset ...")
         self.num_elements = sum(1 for line in open(self.root_dir + '/splits/' + split))
-        # self.num_elements = 10000
+        # self.num_elements = 100000
         print("Number of elements in " + split + ": " + str(self.num_elements))
 
         # Initialize containers
@@ -46,13 +46,13 @@ class YFCC_Dataset(Dataset):
         self.tags = []
         self.latitudes = np.zeros(self.num_elements, dtype=np.float32)
         self.longitudes = np.zeros(self.num_elements, dtype=np.float32)
-        self.img_embeddings = np.zeros((self.num_elements, 300), dtype=np.float32)
+        self.img_embeddings = {}
 
         # Read data
         print("Reading split data ...")
         for i, line in enumerate(open('../../../datasets/YFCC100M/splits/' + split)):
             if i % 2000000 == 0 and i != 0: print(i)
-            # if i == 10000: break
+            # if i == 100000: break
             data = line.split(';')
             self.img_ids[i] = int(data[0])
             tags_array = data[1].split(',')
@@ -71,13 +71,12 @@ class YFCC_Dataset(Dataset):
         print("Reading image embeddings")
         img_em_c = 0
         for i, line in enumerate(open(self.img_embeddings_path)):
-            if i % 2000000 == 0 and i != 0: print(i)
-            # if i == 10000: break
+            if i % 100000 == 0 and i != 0: print(i)
+            # if i == 100000: break
             img_em_c+=1
             d = line.split(',')
             img_id = int(d[0])
-            img_idx, = np.where(self.img_ids == img_id)
-            self.img_embeddings[img_idx, :] = np.asarray(d[1:], dtype=np.float32)
+            self.img_embeddings[img_id] = np.asarray(d[1:], dtype=np.float32)
         print("Img embeddings loaded: " + str(img_em_c))
 
 
@@ -95,7 +94,11 @@ class YFCC_Dataset(Dataset):
 
         if element_picker == 0:  # Change image
             negative_img_idx = random.randint(0, self.num_elements - 1)
-            img_n = self.img_embeddings[negative_img_idx, :]
+            try:
+                img_n = self.img_embeddings[self.img_ids[negative_img_idx]]
+            except:
+                print("Couldn't find img embedding for negative image: " + str(self.img_ids[negative_img_idx]) + ". Using 0s." + str())
+                img_n = np.zeros(300, dtype=np.float32)
 
         elif element_picker == 1:  # Change tag
             while True:  # Check that image does not have the randlomly selected tag
@@ -110,11 +113,15 @@ class YFCC_Dataset(Dataset):
             lat_n = self.latitudes[negative_location_idx]
             lon_n = self.longitudes[negative_location_idx]
 
+
         return img_n, tag_n, lat_n, lon_n
 
     def __getitem__(self, idx):
-
-        img_p = self.img_embeddings[idx, :]
+        try:
+            img_p = self.img_embeddings[self.img_ids[idx]]
+        except:
+            print("Couldn't find img embedding for image: " + str(self.img_ids[idx]) + ". Using 0s. " + str(idx))
+            img_p = np.zeros(300, dtype=np.float32)
 
         # Select a random positive tag
         tag_p = random.choice(self.tags[idx])
@@ -202,6 +209,7 @@ class YFCC_Dataset(Dataset):
         #         tag_n = tag_batch_2[top_scored_triplet_batch_idx_2, :]
         #         lat_n = lat_batch_2[top_scored_triplet_batch_idx_2, 0]
         #         lon_n = lon_batch_2[top_scored_triplet_batch_idx_2, 0]
+
 
         # Build tensors
         img_p = torch.from_numpy(img_p)

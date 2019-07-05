@@ -14,7 +14,7 @@ import json
 import numpy as np
 
 dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'YFCC_MCLL_epoch_6_ValLoss_7.76'
+model_name = 'YFCC_MCLL_epoch_3_ValLoss_7.55'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 top_img_per_tag_path = dataset + 'results/' + model_name + '/tags_top_img.json'
 
