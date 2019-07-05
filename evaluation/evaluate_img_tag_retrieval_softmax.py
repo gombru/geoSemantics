@@ -93,7 +93,7 @@ top_imgs_tag = {}
 print("Getting top img per tag")
 for i in range(0,len(products)):
     indices_sorted = np.array(products[i,:].sort(descending=True)[1][0:precision_k].cpu()).tolist()
-    top_img_tag[tags[i]] = indices_sorted
+    top_imgs_tag[tags[i]] = indices_sorted
 
 
 print("Starting per-tag evaluation")
