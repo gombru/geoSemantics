@@ -25,6 +25,6 @@ def read_tags_and_locations(path):
         tags_array = data[1].split(',')
         tags[img_id] = tags_array
         latitudes[img_id] = float(data[4])
-        longitudes[img_id] = float(data[4])
+        longitudes[img_id] = float(data[5])
 
     return tags, latitudes, longitudes

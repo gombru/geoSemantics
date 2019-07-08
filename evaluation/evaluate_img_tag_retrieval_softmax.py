@@ -85,14 +85,14 @@ del img_embeddings
 print("Shape img em: " +str(img_embeddings_tensor.shape))
 
 print("Computing images scores per tag and softmax")
-products = img_embeddings_tensor.mm(tags_embeddings_tensor)
+products = img_embeddings_tensor.mm(tags_embeddings_tensor.t())
 print("Shape products: " + str(products.shape))
-products = F.softmax(products, dim=0)
+products = F.softmax(products, dim=1)
 
 top_imgs_tag = {}
 print("Getting top img per tag")
 for i in range(0,len(products)):
-    indices_sorted = np.array(products[i,:].sort(descending=True)[1][0:precision_k].cpu()).tolist()
+    indices_sorted = np.array(products[:,i].sort(descending=True)[1][0:precision_k].cpu()).tolist()
     top_imgs_tag[tags[i]] = indices_sorted
 
 

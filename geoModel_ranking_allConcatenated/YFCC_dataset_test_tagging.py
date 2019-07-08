@@ -18,20 +18,20 @@ class YFCC_Dataset(Dataset):
         # Count number of elements
         print("Opening dataset ...")
         self.num_elements = sum(1 for line in open(self.root_dir + 'splits/' + split))
-        # self.num_elements = 100
+        self.num_elements = 5000
         print("Number of elements in " + split + ": " + str(self.num_elements))
 
         # Initialize containers
         self.img_ids = np.zeros(self.num_elements, dtype=np.uint64)
         self.latitudes = np.zeros(self.num_elements, dtype=np.float32)
         self.longitudes = np.zeros(self.num_elements, dtype=np.float32)
-        self.img_embeddings = np.zeros((self.num_elements, 300), dtype=np.float32)
+        self.img_embeddings = {}
 
         # Read data
         print("Reading split data ...")
         for i, line in enumerate(open(self.root_dir + 'splits/' + split)):
             if i % 2000000 == 0 and i != 0: print(i)
-            if i == 100: break
+            if i == 5000: break
             data = line.split(';')
             self.img_ids[i] = int(data[0])
             self.latitudes[i] = float(data[4])
@@ -43,32 +43,33 @@ class YFCC_Dataset(Dataset):
         print("Data read. Set size: " + str(len(self.img_ids)))
         print("Latitudes min and max: " + str(min(self.latitudes)) + ' ; ' + str(max(self.latitudes)))
 
+        # Read data
         print("Reading image embeddings")
         img_em_c = 0
         for i, line in enumerate(open(self.img_embeddings_path)):
-            if i % 2000000 == 0 and i != 0: print(i)
-            # if i == 10000: break
+            if i % 100000 == 0 and i != 0: print(i)
+            if i == 5000: break
             img_em_c+=1
             d = line.split(',')
             img_id = int(d[0])
-            img_idx, = np.where(self.img_ids == img_id)
-            self.img_embeddings[img_idx, :] = np.asarray(d[1:], dtype=np.float32)
-
+            img_em = np.asarray(d[1:], dtype=np.float32)
+            img_em = img_em / np.linalg.norm(img_em,2)
+            self.img_embeddings[img_id] = img_em
         print("Img embeddings loaded: " + str(img_em_c))
 
 
     def __len__(self):
         return len(self.img_ids)
 
-    def __getwordembedding__(self, tag):
-        tag = tag.lower()
-        tag_embedding = np.asarray(self.text_model[tag], dtype=np.float32)
-        return tag_embedding
-
 
     def __getitem__(self, idx):
 
-        img = self.img_embeddings[idx, :]
+        try:
+            img = self.img_embeddings[self.img_ids[idx]]
+        except:
+            print("Couldn't find img embedding for image: " + str(self.img_ids[idx]) + ". Using 0s. " + str(idx))
+            img = np.zeros(300, dtype=np.float32)
+
         lat = self.latitudes[idx]
         lon = self.longitudes[idx]
 

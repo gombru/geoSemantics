@@ -2,7 +2,7 @@
 
 import os
 import torch.utils.data
-import model_test
+import model_test_tagging
 import json
 import numpy as np
 import YFCC_dataset_test_tagging
@@ -16,7 +16,7 @@ batch_size = 1
 workers = 3
 ImgSize = 224
 
-model_name = 'geoModel_to_test'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets_epoch_3_ValLoss_0.0.pth'
 model_name = model_name.replace('.pth','')
 
 gpus = [0]
@@ -32,7 +32,7 @@ state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.t
                         map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
 
 
-model_test = model_test.Model()
+model_test = model_test_tagging.Model()
 model_test = torch.nn.DataParallel(model_test, device_ids=gpus).cuda(gpu)
 model_test.load_state_dict(state_dict, strict=False)
 
@@ -45,6 +45,12 @@ print("Loading textual model ...")
 text_model_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
 text_model = json.load(open(text_model_path))
 print("Vocabulary size: " + str(len(text_model)))
+print("Normalizing vocab")
+for k,v in text_model.items():
+    v = np.asarray(v, dtype=np.float32)
+    text_model[k] = v / np.linalg.norm(v,2)
+
+
 print("Putting vocab in a tensor using ordered tag list")
 tags_tensor = np.zeros((100000, 300), dtype=np.float32)
 tags_file = '../../../datasets/YFCC100M/vocab/vocab_words_100k.txt'

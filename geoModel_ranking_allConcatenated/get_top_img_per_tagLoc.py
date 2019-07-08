@@ -22,7 +22,7 @@ ImgSize = 224
 
 num_query_pairs = 500000
 
-model_name = 'geoModel_to_test'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets_epoch_3_ValLoss_0.0.pth'
 model_name = model_name.replace('.pth','')
 
 gpus = [0]
@@ -51,9 +51,18 @@ top_img_per_tagLoc_indices = torch.zeros([num_query_pairs,10], dtype=torch.int64
 
 print("Generating query tag-location pairs")
 # Load GenSim Word2Vec model
+
+# Load GenSim Word2Vec model
 print("Loading textual model ...")
 text_model_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
 text_model = json.load(open(text_model_path))
+print("Vocabulary size: " + str(len(text_model)))
+print("Normalizing vocab")
+for k,v in text_model.items():
+    v = np.asarray(v, dtype=np.float32)
+    text_model[k] = v / np.linalg.norm(v,2)
+
+
 print("Reading tags and locations ...")
 query_tags_names = []
 query_tags_tensor = np.zeros([num_query_pairs,300],  dtype=np.float32)
@@ -62,7 +71,7 @@ longitudes_tensor = np.zeros([num_query_pairs,1],  dtype=np.float32)
 
 for i, line in enumerate(open('../../../datasets/YFCC100M/splits/' + split)):
     if i % 100000 == 0 and i != 0: print(i)
-    if i == 500000:
+    if i == 1000:
         print("Stopping at: " + str(i))
         break
     data = line.split(';')

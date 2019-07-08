@@ -14,14 +14,14 @@ import json
 import numpy as np
 
 dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'YFCC_MCLL_epoch_3_ValLoss_7.55'
+model_name = 'YFCC_MCLL_epoch_14_ValLoss_7.45'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 top_img_per_tag_path = dataset + 'results/' + model_name + '/tags_top_img.json'
 
 precision_k = 10  # Compute precision at k
-save_img = True  # Save some random image retrieval results
+save_img = False  # Save some random image retrieval results
 
-normalize = True # Normalize img embeddings and tag embeddings using L2 norm
+normalize = False # Normalize img embeddings and tag embeddings using L2 norm
 
 print("Loading tag list ...")
 tags_file = '../../../datasets/YFCC100M/vocab/vocab_words_100k.txt'

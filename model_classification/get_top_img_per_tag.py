@@ -16,7 +16,7 @@ batch_size = 600
 workers = 3
 ImgSize = 224
 
-model_name = 'YFCC_MCLL_epoch_3_ValLoss_7.55'
+model_name = 'YFCC_MCLL_epoch_14_ValLoss_7.45'
 model_name = model_name.strip('.pth')
 
 gpus = [0]
@@ -34,7 +34,7 @@ state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.t
                         map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
 
 
-model_test = model.Model()
+model_test = model.Model_SoftMax()
 model_test = torch.nn.DataParallel(model_test, device_ids=gpus).cuda(gpu)
 model_test.load_state_dict(state_dict, strict=False)
 

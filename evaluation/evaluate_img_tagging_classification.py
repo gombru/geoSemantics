@@ -12,11 +12,11 @@ import json
 import numpy as np
 
 dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'YFCC_MCLL_epoch_6_ValLoss_7.76'
+model_name = 'YFCC_MCLL_epoch_14_ValLoss_7.45'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 results_path = dataset + 'results/' + model_name + '/images_test.json'
 accuracy_k = 10 # Compute accuracy at k (will also compute it at 1)
-save_img = True # Save some random image tagging results
+save_img = False # Save some random image tagging results
 
 print("Loading tag list ...")
 tags_list = []

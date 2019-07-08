@@ -19,7 +19,7 @@ import numpy as np
 import geopy.distance
 
 
-granularities = [99999999,2500,750,200,25,1] # granularities in km
+granularities = [90000000000,2500,750,200,25,1] # granularities in km
 granularities_str = ['street level (1km)', 'city (25km)', 'region (200km)', 'country (750km)', 'continent (2500km)', 'not sensitive (inf)']
 
 def check_location(lat1,lon1,lat2,lon2):
@@ -99,18 +99,19 @@ for i, (pair_info, cur_tag_top_img) in enumerate(top_img_per_tag.items()):
         ignored+=1
         continue
 
-    used+=1
-
     if i % 1 == 0 and i > 0:
-        print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*precisions[0]/i))
+        print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*precisions[0]/used))
 
     # Get cur_tag_top_img using GT
     images_2_check = {}
     for test_img, test_img_tags in test_images_tags.items():
         if cur_tag in test_img_tags:
             images_2_check[test_img] = get_distance(cur_lat, cur_lon, test_images_latitudes[test_img], test_images_longitudes[test_img])
+            # print(images_2_check[test_img])
+            # print(str(cur_lat) + ' \t ' + str(cur_lon)+ ' \t ' + str(test_images_latitudes[test_img]) + ' \t '+str(test_images_longitudes[test_img]))
     images_2_check = sorted(images_2_check.items(), key=lambda x: x[1], reverse=False)
-    cur_tag_top_img = [i[0] for i in images_2_check]
+    # print(images_2_check[0:4])
+    cur_tag_top_img = [sel_img[0] for sel_img in images_2_check]
     cur_tag_top_img = cur_tag_top_img[0:precision_k]
 
     # Compute Precision at k using GT
@@ -120,9 +121,16 @@ for i, (pair_info, cur_tag_top_img) in enumerate(top_img_per_tag.items()):
         if cur_tag in test_images_tags[int(top_img_idx)]:
             # The image has query tag. Now check its location!
             results = check_location(cur_lat, cur_lon, test_images_latitudes[int(top_img_idx)], test_images_longitudes[int(top_img_idx)])
+            if results[0] !=1:
+                print("ERROR! Incorrect location for inf theshold")
+                exit()
             for r_i,r in enumerate(results):
                 if r == 1:
                     precisions_tag[r_i] += 1
+        else:
+            print("ERROR! Tag nor found in test image")
+            exit()
+
 
     precisions_tag /= precision_k
 
@@ -130,6 +138,9 @@ for i, (pair_info, cur_tag_top_img) in enumerate(top_img_per_tag.items()):
         correct = True
 
     precisions += precisions_tag
+    print("Precisions: " + str(precisions))
+
+    used+=1
 
     # Save img
     if save_img and correct and random.randint(0, 100) < 5:

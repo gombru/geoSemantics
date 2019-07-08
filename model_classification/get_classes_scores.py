@@ -15,12 +15,12 @@ batch_size = 600
 workers = 6
 ImgSize = 224
 
-model_name = 'YFCC_MCLL_epoch_3_ValLoss_7.55'
+model_name = 'YFCC_MCLL_epoch_14_ValLoss_7.45'
 model_name = model_name.strip('.pth')
 
-gpus = [1]
-gpu = 1
-CUDA_VISIBLE_DEVICES = 1
+gpus = [0]
+gpu = 0
+CUDA_VISIBLE_DEVICES = 0
 
 
 if not os.path.exists(dataset_folder + 'results/' + model_name):
@@ -30,7 +30,7 @@ output_file_path = dataset_folder + 'results/' + model_name + '/images_test.json
 output_file = open(output_file_path, "w")
 
 state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.tar',
-                        map_location={'cuda:0':'cuda:1', 'cuda:2':'cuda:1', 'cuda:3':'cuda:1'})
+                        map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
 
 
 model_test = model.Model()
