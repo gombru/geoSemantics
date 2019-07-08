@@ -25,3 +25,14 @@ class Model(nn.Module):
                 correct[0] += 1
 
         return x, correct
+
+
+class Model_Test(nn.Module):
+
+    def __init__(self, embedding_dims):
+        super(Model, self).__init__()
+        self.cnn = MyResNet.resnet50(pretrained=True, num_classes=embedding_dims)
+
+    def forward(self, image, tags_p, tags_n):
+        x = self.cnn(image)
+        return x
