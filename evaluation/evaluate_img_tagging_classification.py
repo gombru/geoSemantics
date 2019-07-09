@@ -11,8 +11,8 @@ import os
 import json
 import numpy as np
 
-dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'YFCC_MCLL_epoch_14_ValLoss_7.45'
+dataset = '../../../datasets/YFCC100M/'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets_noBNfromBN_epoch_12_ValLoss_0.34'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 results_path = dataset + 'results/' + model_name + '/images_test.json'
 accuracy_k = 10 # Compute accuracy at k (will also compute it at 1)
@@ -28,6 +28,7 @@ print("Vocabulary size: " + str(len(tags_list)))
 
 print("Reading results ...")
 results = json.load(open(results_path))
+print("Len of results: " +str(len(results)))
 print("Reading tags of testing images ... ")
 test_images_tags = aux.read_tags(test_split_path)
 
@@ -40,19 +41,26 @@ total_accuracy_at_k = 0.0
 
 for i, (img_id, img_result) in enumerate(results.items()):
 
-    if i % 50000 == 0: print(i)
+    if i % 1000 == 0: print(i)
     cur_img_tags = img_result['tags_indices']
 
-    img_id = int(img_id)
+    img_id = int(img_id.replace('\'','').replace('[','').replace(']',''))
 
     # Compute Accuracy at 1
     if tags_list[cur_img_tags[0]] in test_images_tags[img_id]:
         total_accuracy_at_1 += 1
     # Compute Accuracy at k
+    aux = []
     for cur_img_tag in cur_img_tags:
+        aux.append(tags_list[cur_img_tag])
         if tags_list[cur_img_tag] in test_images_tags[img_id]:
             total_accuracy_at_k += 1
             break
+
+    print("Result")
+    print(aux)
+    print(test_images_tags[img_id])
+
 
 total_accuracy_at_1 /= len(results)
 total_accuracy_at_k /= len(results)

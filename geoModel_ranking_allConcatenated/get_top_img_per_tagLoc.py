@@ -4,7 +4,7 @@
 
 import os
 import torch.utils.data
-import model_test_retrieval
+import model
 import json
 import numpy as np
 import YFCC_dataset_test_retrieval
@@ -20,9 +20,10 @@ batch_size = 1
 workers = 3
 ImgSize = 224
 
-num_query_pairs = 500000
+num_query_pairs = 500000 # 100000
+print("Using num query paris: " + str(num_query_pairs))
 
-model_name = 'geoModel_ranking_allConcatenated_randomTriplets_epoch_3_ValLoss_0.0.pth'
+model_name = 'geoModel_to_test.pth'
 model_name = model_name.replace('.pth','')
 
 gpus = [0]
@@ -38,7 +39,7 @@ state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.t
                         map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
 
 
-model_test = model_test_retrieval.Model()
+model_test = model.Model_Test_Retrieval()
 model_test = torch.nn.DataParallel(model_test, device_ids=gpus).cuda(gpu)
 model_test.load_state_dict(state_dict, strict=False)
 
@@ -71,7 +72,7 @@ longitudes_tensor = np.zeros([num_query_pairs,1],  dtype=np.float32)
 
 for i, line in enumerate(open('../../../datasets/YFCC100M/splits/' + split)):
     if i % 100000 == 0 and i != 0: print(i)
-    if i == 1000:
+    if i == num_query_pairs:
         print("Stopping at: " + str(i))
         break
     data = line.split(';')

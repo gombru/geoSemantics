@@ -37,7 +37,13 @@ def check_location(lat1,lon1,lat2,lon2):
 def get_distance(lat1,lon1,lat2,lon2):
     coords_1 = (lat1,lon1)
     coords_2 = (lat2, lon2)
-    distance_km = geopy.distance.vincenty(coords_1, coords_2).km
+    try:
+        distance_km = geopy.distance.vincenty(coords_1, coords_2).km
+    except:
+        print("Error computing distance with gropy. Values:")
+        print(coords_1)
+        print(coords_2)
+        distance_km = 100000
     return distance_km
 
 dataset = '../../../datasets/YFCC100M/'
@@ -58,6 +64,7 @@ print("Vocabulary size: " + str(len(tags_list)))
 
 print("Reading top img per class")
 top_img_per_tag = json.load(open(top_img_per_tag_path))
+print("Num queries of tag and location: " + str(len(top_img_per_tag)))
 
 print("Reading tags and locations of testing images ...")
 test_images_tags, test_images_latitudes, test_images_longitudes = aux.read_tags_and_locations(test_split_path)

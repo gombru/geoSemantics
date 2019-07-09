@@ -43,6 +43,45 @@ class Model(nn.Module):
                 l.weight.data.normal_(0, 0.01)
                 l.bias.data.zero_()
 
+
+class Model_Test_Retrieval(nn.Module):
+
+    def __init__(self):
+        super(Model_Test_Retrieval, self).__init__()
+        self.extra_net = MMNet()
+
+    def forward(self, img, tag, lat, lon):
+        # Here tag is [100kx300]
+        # Others are [1xk], so I expand them
+        img_batch = torch.zeros([len(tag), 300], dtype=torch.float32).cuda()
+        lat_batch = torch.zeros([len(tag), 1], dtype=torch.float32).cuda()
+        lon_batch = torch.zeros([len(tag), 1], dtype=torch.float32).cuda()
+        img_batch[:,:] = img
+        lat_batch[:,:] = lat_batch
+        lon_batch[:,:] = lon_batch
+        score = self.extra_net(img_batch, tag, lat_batch, lon_batch)
+        return score
+
+
+class Model_Test_Tagging(nn.Module):
+
+    def __init__(self):
+        super(Model_Test_Tagging, self).__init__()
+        self.extra_net = MMNet()
+
+    def forward(self, img, tag, lat, lon):
+        # Here tag is [100kx300]
+        # Others are [1xk], so I expand them
+        img_batch = torch.zeros([len(tag), 300], dtype=torch.float32).cuda()
+        lat_batch = torch.zeros([len(tag), 1], dtype=torch.float32).cuda()
+        lon_batch = torch.zeros([len(tag), 1], dtype=torch.float32).cuda()
+        img_batch[:,:] = img
+        lat_batch[:,:] = lat_batch
+        lon_batch[:,:] = lon_batch
+        score = self.extra_net(img_batch, tag, lat_batch, lon_batch)
+        return score
+
+
 class MMNet(nn.Module):
 
     def __init__(self, c):
@@ -74,9 +113,9 @@ class BasicFC(nn.Module):
     def __init__(self, in_channels, out_channels, **kwargs):
         super(BasicFC, self).__init__()
         self.fc = nn.Linear(in_channels, out_channels)
-        self.bn = nn.BatchNorm1d(out_channels, eps=0.001)
+        # self.bn = nn.BatchNorm1d(out_channels, eps=0.001) # momentum = 0.0001
 
     def forward(self, x):
         x = self.fc(x)
-        x = self.bn(x)
+        # x = self.bn(x)
         return F.relu(x, inplace=True)

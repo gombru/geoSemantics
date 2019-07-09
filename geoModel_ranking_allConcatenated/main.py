@@ -8,7 +8,7 @@ import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Config
-training_id = 'geoModel_ranking_allConcatenated_randomTriplets'
+training_id = 'geoModel_ranking_allConcatenated_randomTriplets_noBNfromBN'
 dataset = '../../../datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
 split_val = 'val.txt'
@@ -19,12 +19,12 @@ margin = 1
 
 gpus = [0]
 gpu = 0
-workers = 16 # 8 Num of data loading workers
+workers = 0 # 8 Num of data loading workers
 epochs = 301
 start_epoch = 0 # Useful on restarts
 batch_size = 1024 # 1024 # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
-resume = None  # Path to checkpoint top resume training
+resume = dataset + 'models/saved/geoModel_ranking_allConcatenated_randomTriplets_epoch_3_ValLoss_0.0.pth.tar'  # Path to checkpoint top resume training
 plot = True
 best_epoch = 0
 best_correct_pairs = 0
@@ -93,11 +93,13 @@ for epoch in range(start_epoch, epochs):
     plot_data = train.train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu)
 
     # Evaluate on validation set
-    plot_data = train.validate(val_loader, model, criterion, print_freq, plot_data, gpu)
+    # plot_data = train.validate(val_loader, model, criterion, print_freq, plot_data, gpu)
+    plot_data = train.validate(val_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu)
+
 
     # Remember best model and save checkpoint
     is_best = plot_data['val_loss'][epoch] < best_loss
-    if is_best and epoch != 0:
+    if is_best:
         print("New best model by loss. Val Loss = " + str(plot_data['val_loss'][epoch]))
         best_loss = plot_data['val_loss'][epoch]
         filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2))

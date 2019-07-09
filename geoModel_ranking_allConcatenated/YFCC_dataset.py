@@ -5,6 +5,7 @@ from torch.utils.data import Dataset, DataLoader
 import json
 import random
 import model
+import numpy as np
 
 
 class YFCC_Dataset(Dataset):
@@ -15,8 +16,8 @@ class YFCC_Dataset(Dataset):
         self.img_backbone_model = img_backbone_model
         self.gpu = 0
         self.margin = 1
-        self.num_triplets_evaluated = 32  # Number of triplets to evaluate to then pick the hardest negative
-        self.checkpoint = self.root_dir + 'models/saved/geoModel_to_test.pth.tar'
+        # self.num_triplets_evaluated = 1024  # 32 # Number of triplets to evaluate to then pick the hardest negative
+        # self.checkpoint = self.root_dir + 'models/saved/geoModel_ranking_allConcatenated_randomTriplets_epoch_3_ValLoss_0.0.pth.tar'
 
         if 'train' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/train_filtered.txt'
@@ -35,10 +36,15 @@ class YFCC_Dataset(Dataset):
         text_model_path = self.root_dir + '/vocab/vocab_100k.json'
         self.text_model = json.load(open(text_model_path))
         print("Vocabulary size: " + str(len(self.text_model)))
+        print("Normalizing vocab")
+        for k, v in self.text_model.items():
+            v = np.asarray(v, dtype=np.float32)
+            self.text_model[k] = v / np.linalg.norm(v, 2)
+
         # Count number of elements
         print("Opening dataset ...")
         self.num_elements = sum(1 for line in open(self.root_dir + '/splits/' + split))
-        # self.num_elements = 100000
+        # self.num_elements = 10240
         print("Number of elements in " + split + ": " + str(self.num_elements))
 
         # Initialize containers
@@ -52,11 +58,12 @@ class YFCC_Dataset(Dataset):
         print("Reading split data ...")
         for i, line in enumerate(open('../../../datasets/YFCC100M/splits/' + split)):
             if i % 2000000 == 0 and i != 0: print(i)
-            # if i == 100000: break
+            # if i == 10240: break
             data = line.split(';')
             self.img_ids[i] = int(data[0])
             tags_array = data[1].split(',')
             self.tags.append(tags_array)
+
             self.latitudes[i] = float(data[4])
             self.longitudes[i] = float(data[5])
             # Coordinates normalization
@@ -72,13 +79,14 @@ class YFCC_Dataset(Dataset):
         img_em_c = 0
         for i, line in enumerate(open(self.img_embeddings_path)):
             if i % 100000 == 0 and i != 0: print(i)
-            # if i == 100000: break
-            img_em_c+=1
+            # if i == 10240: break
+            img_em_c += 1
             d = line.split(',')
             img_id = int(d[0])
-            self.img_embeddings[img_id] = np.asarray(d[1:], dtype=np.float32)
+            img_em = np.asarray(d[1:], dtype=np.float32)
+            img_em = img_em / np.linalg.norm(img_em, 2)
+            self.img_embeddings[img_id] = img_em
         print("Img embeddings loaded: " + str(img_em_c))
-
 
     def __len__(self):
         return len(self.img_ids)
@@ -92,12 +100,16 @@ class YFCC_Dataset(Dataset):
         # Select randomly the element to change
         element_picker = random.randint(0, 2)
 
+        # TODO::: HARDCODED
+        # element_picker = 0
+
         if element_picker == 0:  # Change image
             negative_img_idx = random.randint(0, self.num_elements - 1)
             try:
                 img_n = self.img_embeddings[self.img_ids[negative_img_idx]]
             except:
-                print("Couldn't find img embedding for negative image: " + str(self.img_ids[negative_img_idx]) + ". Using 0s." + str())
+                print("Couldn't find img embedding for negative image: " + str(
+                    self.img_ids[negative_img_idx]) + ". Using 0s." + str())
                 img_n = np.zeros(300, dtype=np.float32)
 
         elif element_picker == 1:  # Change tag
@@ -113,10 +125,11 @@ class YFCC_Dataset(Dataset):
             lat_n = self.latitudes[negative_location_idx]
             lon_n = self.longitudes[negative_location_idx]
 
-
         return img_n, tag_n, lat_n, lon_n
 
     def __getitem__(self, idx):
+        # print(str(idx) + ": Img_id " + str(self.img_ids[idx]) + " Img_em: " + str(self.img_embeddings[self.img_ids[idx]][0:3]))
+
         try:
             img_p = self.img_embeddings[self.img_ids[idx]]
         except:
@@ -125,6 +138,7 @@ class YFCC_Dataset(Dataset):
 
         # Select a random positive tag
         tag_p = random.choice(self.tags[idx])
+
         tag_p = self.__getwordembedding__(tag_p)
         lat_p = self.latitudes[idx]
         lon_p = self.longitudes[idx]
@@ -190,7 +204,8 @@ class YFCC_Dataset(Dataset):
         #     # Compute output
         #     # print("Running the model to select hard negative")
         #     with torch.no_grad():  # don't compute gradient
-        #         self.model.eval()  # don't use dropout or batchnorm
+        #         # self.model.eval()  # don't use dropout or batchnorm
+        #         self.model.train()
         #         s_p, s_n, correct = self.model(img_var, tag_var, lat_var, lon_var, img_var_2, tag_var_2, lat_var_2,
         #                                        lon_var_2)
 
@@ -198,6 +213,8 @@ class YFCC_Dataset(Dataset):
         #     # print("Hard negative selected")
         #     values_1, top_scored_triplet_batch_idx_1 = torch.max(s_p, 0)
         #     values_2, top_scored_triplet_batch_idx_2 = torch.max(s_n, 0)
+
+        #     # print("Score hard neg: " + str(values_1) + " " + str(values_2))
 
         #     if s_p[top_scored_triplet_batch_idx_1] > s_n[top_scored_triplet_batch_idx_2]:
         #         img_n = img_batch[top_scored_triplet_batch_idx_1, :]
@@ -211,15 +228,39 @@ class YFCC_Dataset(Dataset):
         #         lon_n = lon_batch_2[top_scored_triplet_batch_idx_2, 0]
 
 
+
+        # if 'val' in self.split:
+        #     # print('val')
+        #     old_lat_n = lat_n
+        #     old_lon_n = lon_n
+
+        #     lat_n = lat_p
+        #     lon_n = lon_p
+
+        #     lat_p = old_lat_n
+        #     lon_p = old_lon_n
+
+        #     # print("P")
+        #     # print(img_p[0:5])
+        #     # print(tag_p[0:5])
+        #     # print(lat_p)
+        #     # print(lon_p)
+        #     # print("N")
+        #     # print(img_n[0:5])
+        #     # print(tag_n[0:5])
+        #     # print(lat_n)
+        #     # print(lon_n)
+
+
+
         # Build tensors
         img_p = torch.from_numpy(img_p)
         tag_p = torch.from_numpy(tag_p)
-        lat_p = torch.from_numpy(np.array([lat_p]))
-        lon_p = torch.from_numpy(np.array([lon_p]))
-
+        lat_p = torch.from_numpy(np.array([lat_p], dtype=np.float32))
+        lon_p = torch.from_numpy(np.array([lon_p], dtype=np.float32))
         img_n = torch.from_numpy(img_n)
         tag_n = torch.from_numpy(tag_n)
-        lat_n = torch.from_numpy(np.array([lat_n]))
-        lon_n = torch.from_numpy(np.array([lon_n]))
+        lat_n = torch.from_numpy(np.array([lat_n], dtype=np.float32))
+        lon_n = torch.from_numpy(np.array([lon_n], dtype=np.float32))
 
         return img_p, tag_p, lat_p, lon_p, img_n, tag_n, lat_n, lon_n
