@@ -8,7 +8,7 @@ import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Config
-training_id = 'geoModel_ranking_allConcatenated_randomTriplets_noBNfromBN'
+training_id = 'geoModel_ranking_allConcatenated_randomTriplets_M3'
 dataset = '../../../datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
 split_val = 'val.txt'
@@ -20,11 +20,11 @@ margin = 1
 gpus = [0]
 gpu = 0
 workers = 0 # 8 Num of data loading workers
-epochs = 301
+epochs = 10000
 start_epoch = 0 # Useful on restarts
 batch_size = 1024 # 1024 # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
-resume = dataset + 'models/saved/geoModel_ranking_allConcatenated_randomTriplets_epoch_3_ValLoss_0.0.pth.tar'  # Path to checkpoint top resume training
+resume = None # dataset + 'models/saved/' + 'geoModel_ranking_allConcatenated_randomTriplets_M2_100k_epoch_1.pth.tar'  # Path to checkpoint top resume training
 plot = True
 best_epoch = 0
 best_correct_pairs = 0
@@ -81,8 +81,8 @@ ax1.set_xlabel('epoch')
 ax1.set_ylabel('train loss (r), val loss (y)')
 ax2.set_ylabel('train correct pairs (b), val correct pairs (g)')
 ax2.set_autoscaley_on(False)
-ax1.set_ylim([0, 1])
-ax2.set_ylim([0, batch_size])
+ax1.set_ylim([0, 1.02])
+ax2.set_ylim([0, batch_size + 0.2])
 
 print("Dataset and model ready. Starting training ...")
 
@@ -93,7 +93,6 @@ for epoch in range(start_epoch, epochs):
     plot_data = train.train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu)
 
     # Evaluate on validation set
-    # plot_data = train.validate(val_loader, model, criterion, print_freq, plot_data, gpu)
     plot_data = train.validate(val_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu)
 
 
@@ -123,4 +122,10 @@ for epoch in range(start_epoch, epochs):
         if epoch % 1 == 0 and epoch != 0:
             title = dataset +'/training/' + training_id + '_epoch_' + str(epoch) + '.png'
             savefig(title, bbox_inches='tight')
+
+
+print("Finished Training, saving checkpoint")
+filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch)
+prefix_len = len('_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2)))
+train.save_checkpoint(model, filename, prefix_len)
 

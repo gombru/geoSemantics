@@ -15,7 +15,7 @@ batch_size = 1
 workers = 3
 ImgSize = 224
 
-model_name = 'geoModel_ranking_allConcatenated_randomTriplets_noBNfromBN_epoch_12_ValLoss_0.34'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets_M2_8_epoch_9999.pth'
 model_name = model_name.replace('.pth', '')
 
 gpus = [0]
@@ -27,7 +27,7 @@ if not os.path.exists(dataset_folder + 'results/' + model_name):
 output_file_path = dataset_folder + 'results/' + model_name + '/images_test.json'
 output_file = open(output_file_path, "w")
 
-state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.tar',
+state_dict = torch.load(dataset_folder + '/models/' + model_name + '.pth.tar',
                         map_location={'cuda:1': 'cuda:0', 'cuda:2': 'cuda:0', 'cuda:3': 'cuda:0'})
 
 model_test = model.Model_Test_Tagging()
@@ -60,7 +60,7 @@ print("Tags tensor created")
 print("Running model...")
 results = {}
 with torch.no_grad():
-    model_test.train()
+    model_test.eval()
     for i, (img_id, img, lat, lon) in enumerate(test_loader):
         img = torch.autograd.Variable(img)
         lat = torch.autograd.Variable(lat)

@@ -12,7 +12,9 @@ import json
 import numpy as np
 
 dataset = '../../../datasets/YFCC100M/'
-model_name = 'geoModel_ranking_allConcatenated_randomTriplets_noBNfromBN_epoch_12_ValLoss_0.34'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets_M2_8_epoch_9999.pth'
+model_name = model_name.replace('.pth', '')
+print(model_name)
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 results_path = dataset + 'results/' + model_name + '/images_test.json'
 accuracy_k = 10 # Compute accuracy at k (will also compute it at 1)
@@ -60,6 +62,11 @@ for i, (img_id, img_result) in enumerate(results.items()):
     print("Result")
     print(aux)
     print(test_images_tags[img_id])
+
+    # print("Result")
+    # print(aux)
+    # print(test_images_tags[img_id])
+
 
 
 total_accuracy_at_1 /= len(results)

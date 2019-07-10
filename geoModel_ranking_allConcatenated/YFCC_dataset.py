@@ -21,8 +21,10 @@ class YFCC_Dataset(Dataset):
 
         if 'train' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/train_filtered.txt'
-        else:
+        elif 'val' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/val.txt'
+        else:
+            self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/test.txt'
 
         # Load model to generate negative pairs
         # print("Loading model to generate negative pairs")
@@ -40,11 +42,12 @@ class YFCC_Dataset(Dataset):
         for k, v in self.text_model.items():
             v = np.asarray(v, dtype=np.float32)
             self.text_model[k] = v / np.linalg.norm(v, 2)
+        self.tags_list = list(self.text_model.keys())
 
         # Count number of elements
         print("Opening dataset ...")
         self.num_elements = sum(1 for line in open(self.root_dir + '/splits/' + split))
-        # self.num_elements = 10240
+        # self.num_elements = 102400
         print("Number of elements in " + split + ": " + str(self.num_elements))
 
         # Initialize containers
@@ -58,17 +61,17 @@ class YFCC_Dataset(Dataset):
         print("Reading split data ...")
         for i, line in enumerate(open('../../../datasets/YFCC100M/splits/' + split)):
             if i % 2000000 == 0 and i != 0: print(i)
-            # if i == 10240: break
+            if i == self.num_elements: break
             data = line.split(';')
             self.img_ids[i] = int(data[0])
             tags_array = data[1].split(',')
             self.tags.append(tags_array)
 
-            self.latitudes[i] = float(data[4])
-            self.longitudes[i] = float(data[5])
-            # Coordinates normalization
-            self.latitudes[i] = (self.latitudes[i] + 90) / 180
-            self.longitudes[i] = (self.longitudes[i] + 180) / 360
+            # self.latitudes[i] = float(data[4])
+            # self.longitudes[i] = float(data[5])
+            # # Coordinates normalization
+            # self.latitudes[i] = (self.latitudes[i] + 90) / 180
+            # self.longitudes[i] = (self.longitudes[i] + 180) / 360
 
         print("Data read. Set size: " + str(len(self.tags)))
 
@@ -79,7 +82,7 @@ class YFCC_Dataset(Dataset):
         img_em_c = 0
         for i, line in enumerate(open(self.img_embeddings_path)):
             if i % 100000 == 0 and i != 0: print(i)
-            # if i == 10240: break
+            if i == self.num_elements: break
             img_em_c += 1
             d = line.split(',')
             img_id = int(d[0])
@@ -98,10 +101,10 @@ class YFCC_Dataset(Dataset):
 
     def __get_random_negative_triplet__(self, idx, img_n, tag_n, lat_n, lon_n):
         # Select randomly the element to change
-        element_picker = random.randint(0, 2)
+        # element_picker = random.randint(0, 2)
 
         # TODO::: HARDCODED
-        # element_picker = 0
+        element_picker = random.randint(0, 1)
 
         if element_picker == 0:  # Change image
             negative_img_idx = random.randint(0, self.num_elements - 1)
@@ -114,8 +117,7 @@ class YFCC_Dataset(Dataset):
 
         elif element_picker == 1:  # Change tag
             while True:  # Check that image does not have the randlomly selected tag
-                negative_img_idx = random.randint(0, self.num_elements - 1)
-                cur_tag_neg = random.choice(self.tags[negative_img_idx])
+                cur_tag_neg = random.choice(self.tags_list)
                 if cur_tag_neg not in self.tags[idx]:
                     break
             tag_n = self.__getwordembedding__(cur_tag_neg)
@@ -128,7 +130,6 @@ class YFCC_Dataset(Dataset):
         return img_n, tag_n, lat_n, lon_n
 
     def __getitem__(self, idx):
-        # print(str(idx) + ": Img_id " + str(self.img_ids[idx]) + " Img_em: " + str(self.img_embeddings[self.img_ids[idx]][0:3]))
 
         try:
             img_p = self.img_embeddings[self.img_ids[idx]]
@@ -228,31 +229,6 @@ class YFCC_Dataset(Dataset):
         #         lon_n = lon_batch_2[top_scored_triplet_batch_idx_2, 0]
 
 
-
-        # if 'val' in self.split:
-        #     # print('val')
-        #     old_lat_n = lat_n
-        #     old_lon_n = lon_n
-
-        #     lat_n = lat_p
-        #     lon_n = lon_p
-
-        #     lat_p = old_lat_n
-        #     lon_p = old_lon_n
-
-        #     # print("P")
-        #     # print(img_p[0:5])
-        #     # print(tag_p[0:5])
-        #     # print(lat_p)
-        #     # print(lon_p)
-        #     # print("N")
-        #     # print(img_n[0:5])
-        #     # print(tag_n[0:5])
-        #     # print(lat_n)
-        #     # print(lon_n)
-
-
-
         # Build tensors
         img_p = torch.from_numpy(img_p)
         tag_p = torch.from_numpy(tag_p)
@@ -262,5 +238,6 @@ class YFCC_Dataset(Dataset):
         tag_n = torch.from_numpy(tag_n)
         lat_n = torch.from_numpy(np.array([lat_n], dtype=np.float32))
         lon_n = torch.from_numpy(np.array([lon_n], dtype=np.float32))
+
 
         return img_p, tag_p, lat_p, lon_p, img_n, tag_n, lat_n, lon_n
