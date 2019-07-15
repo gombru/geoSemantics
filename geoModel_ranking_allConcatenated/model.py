@@ -43,6 +43,35 @@ class Model(nn.Module):
                 l.weight.data.normal_(0, 0.01)
                 l.bias.data.zero_()
 
+class Model_Multiple_Negatives(nn.Module):
+
+    def __init__(self):
+        super(Model, self).__init__()
+        self.extra_net = MMNet()
+        self.initialize_weights()
+
+    def forward(self, img, tag, lat, lon):
+        score = self.extra_net(img, tag, lat, lon)
+        return score
+
+    def initialize_weights(self):
+        for l in self.extra_net.modules(): # Initialize only extra_net weights
+            if isinstance(l, nn.Conv2d):
+                n = l.kernel_size[0] * l.kernel_size[1] * l.out_channels
+                l.weight.data.normal_(0, math.sqrt(2. / n))
+                if l.bias is not None:
+                    l.bias.data.zero_()
+            elif isinstance(l, nn.BatchNorm2d):
+                l.weight.data.fill_(1)
+                l.bias.data.zero_()
+            elif isinstance(l, nn.BatchNorm1d):
+                l.weight.data.fill_(1)
+                l.bias.data.zero_()
+            elif isinstance(l, nn.Linear):
+                l.weight.data.normal_(0, 0.01)
+                l.bias.data.zero_()
+
+
 
 class Model_Test_Retrieval(nn.Module):
 

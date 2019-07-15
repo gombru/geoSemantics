@@ -2,13 +2,13 @@ import torch.nn as nn
 import torch.backends.cudnn as cudnn
 import torch.utils.data
 import torch.utils.data.distributed
-import YFCC_dataset
-import train
+import YFCC_dataset_multiple_negatives
+import train_multiple_negatives
 import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Config
-training_id = 'geoModel_ranking_allConcatenated_randomTriplets_M3'
+training_id = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_M1'
 dataset = '../../../datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
 split_val = 'val.txt'
@@ -38,7 +38,7 @@ weight_decay = 1e-4
 # Loss
 criterion = nn.MarginRankingLoss(margin=margin).cuda(gpu)
 # Model
-model = model.Model(margin=margin).cuda(gpu)
+model = model.Model_Multiple_Negatives().cuda(gpu)
 model = torch.nn.DataParallel(model, device_ids=gpus)
 
 optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
@@ -54,10 +54,10 @@ if resume:
 cudnn.benchmark = True
 
 # Data loading code (pin_memory allows better transferring of samples to GPU memory)
-train_dataset = YFCC_dataset.YFCC_Dataset(
+train_dataset = YFCC_dataset_multiple_negatives.YFCC_Dataset(
     dataset,split_train,img_backbone_model)
 
-val_dataset = YFCC_dataset.YFCC_Dataset(
+val_dataset = YFCC_dataset_multiple_negatives.YFCC_Dataset(
     dataset, split_val,img_backbone_model)
 
 train_loader = torch.utils.data.DataLoader(
@@ -90,10 +90,10 @@ for epoch in range(start_epoch, epochs):
     plot_data['epoch'] = epoch
 
     # Train for one epoch
-    plot_data = train.train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu)
+    plot_data = train_multiple_negatives.train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu, margin)
 
     # Evaluate on validation set
-    plot_data = train.validate(val_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu)
+    plot_data = train_multiple_negatives.validate(val_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu, margin)
 
 
     # Remember best model and save checkpoint
@@ -106,11 +106,11 @@ for epoch in range(start_epoch, epochs):
         train.save_checkpoint(model, filename, prefix_len)
 
     if plot:
-        ax1.plot(it_axes[0:epoch], plot_data['train_loss'][0:epoch], 'r')
-        ax2.plot(it_axes[0:epoch], plot_data['train_correct_pairs'][0:epoch], 'b')
+        ax1.plot(it_axes[0:epoch+1], plot_data['train_loss'][0:epoch+1], 'r')
+        ax2.plot(it_axes[0:epoch+1], plot_data['train_correct_pairs'][0:epoch+1], 'b')
 
-        ax1.plot(it_axes[0:epoch], plot_data['val_loss'][0:epoch], 'y')
-        ax2.plot(it_axes[0:epoch], plot_data['val_correct_pairs'][0:epoch], 'g')
+        ax1.plot(it_axes[0:epoch+1], plot_data['val_loss'][0:epoch+1], 'y')
+        ax2.plot(it_axes[0:epoch+1], plot_data['val_correct_pairs'][0:epoch+1], 'g')
 
         plt.title(training_id)
         plt.ion()
