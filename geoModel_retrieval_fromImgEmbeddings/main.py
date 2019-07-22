@@ -7,34 +7,32 @@ import train
 import model
 from pylab import zeros, arange, subplots, plt, savefig
 
-# Config
-training_id = 'geoModel_retrieval_CNN_NCSL_frozen_randomTriplets_noLoc_M1'
+# Configg
+training_id = 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1'
 dataset = '../../../hd/datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
 split_val = 'val.txt'
 
-CNN_checkpoint = 'YFCC_NCSL_3rdtraining_epoch_3_ValLoss_0.37.pth.tar'
-CNN_checkpoint = '../../../hd/datasets/YFCC100M/' + 'models/saved/' + CNN_checkpoint
+img_embeddings_folder = dataset + 'img_embeddings/' + 'YFCC_NCSL_2ndtraining_epoch_16_ValLoss_0.38'
 
 margin = 1
 norm_degree = 2
 
-gpus = [2]
-gpu = 2
-workers = 5 # 8 Num of data loading workers
+gpus = [0]
+gpu = 0
+workers = 3 # 8 Num of data loading workers
 epochs = 10000
 start_epoch = 0 # Useful on restarts
-batch_size = 650 # 600 # 1024 # Batch size
+batch_size = 1024 # 600 # 1024 # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
 resume = None # dataset + 'models/saved/' + 'geoModel_ranking_allConcatenated_randomTriplets_M2_100k_epoch_1.pth.tar'  # Path to checkpoint top resume training
 plot = True
 best_epoch = 0
 best_correct_pairs = 0
 best_loss = 1000
-ImgSize = 224
 
 # Optimizer (SGD)
-lr = 0.2 # 0.1
+lr = 0.25 # 0.1
 momentum = 0.9
 weight_decay = 1e-4
 
@@ -42,7 +40,7 @@ weight_decay = 1e-4
 criterion = nn.TripletMarginLoss(margin=margin, p=norm_degree).cuda(gpu)
 # Model
 print("Initializing model")
-model = model.Model(margin, norm_degree, CNN_checkpoint).cuda(gpu)
+model = model.Model(margin, norm_degree).cuda(gpu)
 model = torch.nn.DataParallel(model, device_ids=gpus)
 
 optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
@@ -51,7 +49,7 @@ optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight
 if resume:
     print("Loading pretrained model")
     print("=> loading checkpoint '{}'".format(resume))
-    checkpoint = torch.load(resume, map_location={'cuda:0':'cuda:2', 'cuda:1':'cuda:2', 'cuda:3':'cuda:2'})
+    checkpoint = torch.load(resume, map_location={'cuda:1':'cuda:0', 'cuda:1':'cuda:0', 'cuda:3':'cuda:0'})
     model.load_state_dict(checkpoint, strict=False)
     print("Checkpoint loaded")
 
@@ -59,10 +57,10 @@ cudnn.benchmark = True
 
 # Data loading code (pin_memory allows better transferring of samples to GPU memory)
 train_dataset = YFCC_dataset.YFCC_Dataset(
-    dataset,split_train,random_crop=ImgSize,mirror=True)
+    dataset,split_train,img_embeddings_folder)
 
 val_dataset = YFCC_dataset.YFCC_Dataset(
-    dataset, split_val,random_crop=ImgSize,mirror=True)
+    dataset, split_val,img_embeddings_folder)
 
 train_loader = torch.utils.data.DataLoader(
     train_dataset, batch_size=batch_size, shuffle=True,

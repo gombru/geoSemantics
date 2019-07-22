@@ -1,35 +1,11 @@
 import torch.nn as nn
-import MyResNet
 import torch
 import torch.nn.functional as F
-from collections import OrderedDict
-
 
 class Model(nn.Module):
 
     def __init__(self, margin, norm_degree, CNN_checkpoint):
         super(Model, self).__init__()
-
-        self.cnn = MyResNet.resnet50(pretrained=True, num_classes=300)
-        print("Loading ResNet checkpoint: " + str(CNN_checkpoint))
-        state_dict = torch.load(CNN_checkpoint, map_location={'cuda:0': 'cuda:2', 'cuda:1': 'cuda:2', 'cuda:3': 'cuda:2'})
-        new_state_dict = OrderedDict()
-        for k, v in state_dict.items():
-            name = k[11:] # remove `module.`
-            new_state_dict[name] = v
-        # load params
-        self.cnn.load_state_dict(new_state_dict, strict=True)
-
-        ct = 0
-        for child in self.cnn.children():
-            ct += 1
-            if ct < len(list(self.cnn.children())):
-                print("Freezing: " + str(child))
-                for param in child.parameters():
-                    param.requires_grad = False
-            else:
-                print("Not Freezing: " + str(child))
-
         self.extra_net = MMNet()
         self.initialize_weights()
         self.c = {}
@@ -38,12 +14,9 @@ class Model(nn.Module):
 
     def forward(self, img_p, img_n, tag, lat, lon):
 
-        img_p = self.cnn(img_p)
-        img_n = self.cnn(img_n)
-
         img_p, img_n, anchor = self.extra_net(img_p, img_n, tag, lat, lon)
 
-        # Check if triplet is already correct (not used for the loss, just for monitoring)
+        # Check if triplet is already correct (not used fors the loss, just for monitoring)
         correct = torch.zeros([1], dtype=torch.int32).cuda()
         d_i_tp = F.pairwise_distance(anchor, img_p, p=self.c['norm_degree'])
         d_i_tn = F.pairwise_distance(anchor, img_n, p=self.c['norm_degree'])

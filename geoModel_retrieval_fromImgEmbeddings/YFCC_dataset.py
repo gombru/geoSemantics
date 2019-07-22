@@ -11,12 +11,20 @@ import image_processing
 
 
 class YFCC_Dataset(Dataset):
-    def __init__(self, root_dir, split, random_crop, mirror):
+    def __init__(self, root_dir, split, img_backbone_model):
 
         self.root_dir = root_dir
         self.split = split
-        self.random_crop = random_crop
-        self.mirror = mirror
+
+        if 'train' in self.split:
+            self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/train_filtered.txt'
+            self.num_elements = 10240
+        elif 'val' in self.split:
+            self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/val.txt'
+            self.num_elements = 2048
+        else:
+            self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/test.txt'
+
 
         # Load GenSim Word2Vec model
         print("Loading textual model ...")
@@ -68,6 +76,19 @@ class YFCC_Dataset(Dataset):
         print("Latitudes min and max: " + str(min(self.latitudes)) + ' ; ' + str(max(self.latitudes)))
         print("Longitudes min and max: " + str(min(self.longitudes)) + ' ; ' + str(max(self.longitudes)))
 
+        print("Reading image embeddings")
+        img_em_c = 0
+        for i, line in enumerate(open(self.img_embeddings_path)):
+            if i % 100000 == 0 and i != 0: print(i)
+            if i == self.num_elements: break
+            img_em_c += 1
+            d = line.split(',')
+            img_id = int(d[0])
+            img_em = np.asarray(d[1:], dtype=np.float32)
+            img_em = img_em / np.linalg.norm(img_em, 2)
+            self.img_embeddings[img_id] = img_em
+        print("Img embeddings loaded: " + str(img_em_c))
+
 
     def __len__(self):
         return len(self.img_ids)
@@ -79,31 +100,11 @@ class YFCC_Dataset(Dataset):
 
     def __getitem__(self, idx):
 
-        img_name = '{}{}{}'.format(self.root_dir, self.img_ids[idx], '.jpg')
         try:
-            img_p = Image.open(img_name)
+            img_p = self.img_embeddings[self.img_ids[idx]]
         except:
-            new_img_name = '../../../ssd2/YFCC100M/train_img/6985418911.jpg'
-            print("Img file " + img_name + " not found, using hardcoded " + new_img_name)
-            img_p = Image.open(new_img_name)
-
-        try:
-            if self.random_crop != 0:
-                img_p = image_processing.RandomCrop(img_p,self.random_crop)
-            if self.mirror:
-                img_p = image_processing.Mirror(img_p)
-            img_p = np.array(img_p, dtype=np.float32)
-            img_p = image_processing.PreprocessImage(img_p)
-
-        except:
-            print("Error in data aumentation with image " + img_name)
-            new_img_name = '../../../ssd2/YFCC100M/train_img/6985418911.jpg'
-            print("Using hardcoded: " + new_img_name)
-            img_p = Image.open(new_img_name)
-            if self.random_crop != 0:
-                img_p = image_processing.RandomCrop(img_p,self.random_crop)
-            img_p = np.array(img_p, dtype=np.float32)
-            img_p = image_processing.PreprocessImage(img_p)
+            print("Couldn't find img embedding for image: " + str(self.img_ids[idx]) + ". Using 0s. " + str(idx))
+            img_p = np.zeros(300, dtype=np.float32)
 
         # Select a random positive tag
         tag_str = random.choice(self.tags[idx])
@@ -126,30 +127,11 @@ class YFCC_Dataset(Dataset):
         #         break
 
 
-        img_name = '{}{}{}'.format(self.root_dir, self.img_ids[img_n_index], '.jpg')
         try:
-            img_n = Image.open(img_name)
+            img_n = self.img_embeddings[self.img_ids[img_n_index]]
         except:
-            new_img_name = '../../../ssd2/YFCC100M/train_img/6985418911.jpg'
-            print("Img file " + img_name + " not found, using hardcoded " + new_img_name)
-            img_n = Image.open(new_img_name)
-        try:
-            if self.random_crop != 0:
-                img_n = image_processing.RandomCrop(img_n,self.random_crop)
-            if self.mirror:
-                img_n = image_processing.Mirror(img_n)
-            img_n = np.array(img_n, dtype=np.float32)
-            img_n = image_processing.PreprocessImage(img_n)
-
-        except:
-            print("Error in data aumentation with image " + img_name)
-            new_img_name = '../../../ssd2/YFCC100M/train_img/6985418911.jpg'
-            print("Using hardcoded: " + new_img_name)
-            image = Image.open(new_img_name)
-            if self.random_crop != 0:
-                img_n = image_processing.RandomCrop(img_n,self.random_crop)
-            img_n = np.array(img_n, dtype=np.float32)
-            img_n = image_processing.PreprocessImage(img_n)
+            print("Couldn't find img embedding for image: " + str(self.img_ids[idx]) + ". Using 0s. " + str(idx))
+            img_p = np.zeros(300, dtype=np.float32)
 
         # Build tensors
         img_p = torch.from_numpy(np.copy(img_p))
