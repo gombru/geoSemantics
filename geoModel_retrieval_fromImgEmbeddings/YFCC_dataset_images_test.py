@@ -16,25 +16,27 @@ class YFCC_Dataset(Dataset):
 
         if 'train' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/train_filtered.txt'
-            self.num_elements = 102400
         elif 'val' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/val.txt'
-            self.num_elements = 2048 * 2
         else:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/test.txt'
 
 
 
         self.img_embeddings = {}
+        self.img_ids = []
 
         print("Reading image embeddings")
         img_em_c = 0
         for i, line in enumerate(open(self.img_embeddings_path)):
             if i % 100000 == 0 and i != 0: print(i)
-            if i == self.num_elements: break
+            # if i == 1000:
+            #     print("STOPPING AT 1000")
+            #     break
             img_em_c += 1
             d = line.split(',')
             img_id = int(d[0])
+            self.img_ids.append(img_id)
             img_em = np.asarray(d[1:], dtype=np.float32)
             img_em = img_em / np.linalg.norm(img_em, 2)
             self.img_embeddings[img_id] = img_em
@@ -42,7 +44,7 @@ class YFCC_Dataset(Dataset):
 
 
     def __len__(self):
-        return len(self.img_embeddings)
+        return len(self.img_ids)
 
 
     def __getitem__(self, idx):

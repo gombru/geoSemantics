@@ -22,7 +22,13 @@ granularities_str = ['street level (1km)', 'city (25km)', 'region (200km)', 'cou
 def check_location(lat1,lon1,lat2,lon2):
     coords_1 = (lat1,lon1)
     coords_2 = (lat2, lon2)
-    distance_km = geopy.distance.vincenty(coords_1, coords_2).km
+    try:
+        distance_km = geopy.distance.vincenty(coords_1, coords_2).km
+    except:
+        print("Error computing distance with gropy. Values:")
+        print(coords_1)
+        print(coords_2)
+        distance_km = 100000
     results = np.zeros(len(granularities))
     for i,gr in enumerate(granularities):
         if distance_km <= gr:

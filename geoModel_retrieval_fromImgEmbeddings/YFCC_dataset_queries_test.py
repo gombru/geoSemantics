@@ -33,11 +33,11 @@ class YFCC_Dataset(Dataset):
 
         for line in open(queries_file, 'r'):
             d = line.split(',')
-            query_tags.append(d[0])
-            query_lats.append((float(d[1]) + 90) / 180)
-            query_lons.append((float(d[2]) + 180) / 360)
+            self.query_tags.append(d[0])
+            self.query_lats.append((float(d[1]) + 90) / 180)
+            self.query_lons.append((float(d[2]) + 180) / 360)
 
-        print("Number of queries: " + str(len(query_tags)))
+        print("Number of queries: " + str(len(self.query_tags)))
 
     def __len__(self):
         return len(self.query_tags)
@@ -53,8 +53,8 @@ class YFCC_Dataset(Dataset):
         tag = self.__getwordembedding__(tag_str)
 
         tag = torch.from_numpy(tag)
-        lat = torch.from_numpy(np.array([query_lats[idx]], dtype=np.float32))
-        lon = torch.from_numpy(np.array([query_lons[idx]], dtype=np.float32))
+        lat = torch.from_numpy(np.array([self.query_lats[idx]], dtype=np.float32))
+        lon = torch.from_numpy(np.array([self.query_lons[idx]], dtype=np.float32))
 
 
         return tag_str, tag, lat, lon

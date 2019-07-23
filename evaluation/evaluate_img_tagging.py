@@ -12,25 +12,25 @@ import os
 import json
 import numpy as np
 
-dataset = '../../../datasets/YFCC100M/'
-model_name = 'YFCC_MCLL_epoch_3_ValLoss_7.55'
+dataset = '../../../hd/datasets/YFCC100M/'
+model_name = 'YFCC_ranking_tags_average_softNegative_epoch_2_ValLoss_0.37'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 img_embeddings_path = dataset + 'results/' + model_name + '/images_embeddings_test.json'
-tags_embeddings_path = dataset + 'results/' + model_name + '/tags_embeddings.json'
+# tags_embeddings_path = dataset + 'results/' + model_name + '/tags_embeddings.json'
 # If using GloVe embeddings directly
-# print("Using GloVe embeddings")
-# tags_embeddings_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
+print("Using GloVe embeddings")
+tags_embeddings_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
 embedding_dim = 300
 accuracy_k = 10 # Compute accuracy at k (will also compute it at 1)
 save_img = False # Save some random image tagging results
 
-measure = 'dotP' # 'distance'
+measure = 'cosSim'  # 'distance', 'dotP', 'cosSim'
 
 distance_norm = 2 # 2
 if measure == 'distance':
     print("Using pairwise distance with norm: " + str(distance_norm))
 
-normalize = False # Normalize img embeddings and tag embeddings using L2 norm
+normalize = True # Normalize img embeddings and tag embeddings using L2 norm
 print("Normalize tags and img embeddings: " + str(normalize))
 
 print("Reading tags embeddings ...")
@@ -59,6 +59,9 @@ print("Starting per-image evaluation")
 total_accuracy_at_1 = 0.0
 total_accuracy_at_k = 0.0
 dist = nn.PairwiseDistance(p=distance_norm)
+cosSim = nn.CosineSimilarity(dim=1, eps=1e-6)
+
+print(img_embeddings.keys())
 
 for i, (img_id, img_embedding) in enumerate(img_embeddings.items()):
 
@@ -76,10 +79,15 @@ for i, (img_id, img_embedding) in enumerate(img_embeddings.items()):
         # indices_sorted = np.argsort(distances)[0:accuracy_k] # if distances
         indices_sorted = np.array(distances.sort(descending=False)[1][0:accuracy_k].cpu())
 
-    elif measure == 'dotP':
-        products = tags_embeddings_tensor.mm(img_embeddings_tensor.reshape(1,-1).t()).view(-1)
-        products = F.softmax(products, dim=0)
-        indices_sorted = np.array(products.sort(descending=True)[1][0:accuracy_k].cpu())
+    elif measure == 'cosineSim':
+        similarities = cosSim(tags_embeddings_tensor, img_embeddings_tensor)
+        indices_sorted = np.array(distances.sort(descending=True)[1][0:accuracy_k].cpu())
+
+
+    # elif measure == 'dotP':
+    #     products = tags_embeddings_tensor.mm(img_embeddings_tensor.reshape(1,-1).t()).view(-1)
+    #     products = F.softmax(products, dim=0)
+    #     indices_sorted = np.array(products.sort(descending=True)[1][0:accuracy_k].cpu())
 
     else:
         print("Measure not found: " + str(measure))
@@ -88,6 +96,7 @@ for i, (img_id, img_embedding) in enumerate(img_embeddings.items()):
     # Compute Accuracy at 1
     correct = False
     correct_tag = ''
+
     if tags[indices_sorted[0]] in test_images_tags[int(img_id)]:
         total_accuracy_at_1 += 1
     # Compute Accuracy at k

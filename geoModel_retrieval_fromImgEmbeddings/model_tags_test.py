@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class Model(nn.Module):
-    def __init__(self, margin, norm_degree):
+    def __init__(self):
         super(Model, self).__init__()
         self.extra_net = MMNet()
 

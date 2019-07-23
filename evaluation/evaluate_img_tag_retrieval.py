@@ -13,19 +13,19 @@ import os
 import json
 import numpy as np
 
-dataset = '../../../datasets/YFCC100M/'
-model_name = 'YFCC_MCLL_epoch_3_ValLoss_7.55'
+dataset = '../../../hd/datasets/YFCC100M/'
+model_name = 'YFCC_ranking_tags_average_softNegative_epoch_2_ValLoss_0.37'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 img_embeddings_path = dataset + 'results/' + model_name + '/images_embeddings_test.json'
-tags_embeddings_path = dataset + 'results/' + model_name + '/tags_embeddings.json'
+# tags_embeddings_path = dataset + 'results/' + model_name + '/tags_embeddings.json'
 # If using GloVe embeddings directly
-# print("Using GloVe embeddings")
-# tags_embeddings_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
+print("Using GloVe embeddings")
+tags_embeddings_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
 embedding_dim = 300
 precision_k = 10  # Compute precision at k
 save_img = False  # Save some random image retrieval results
 
-measure =  'dotP' # 'distance'
+measure = 'cosineSim' # 'distance', 'cosineSim', 'dotP'
 
 distance_norm = 2 # 2
 if measure == 'distance':
@@ -78,6 +78,8 @@ del img_embeddings
 
 print("Starting per-tag evaluation")
 dist = nn.PairwiseDistance(p=distance_norm)
+cosSim = nn.CosineSimilarity(dim=1, eps=1e-6)
+
 total_precision = 0.0
 for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()):
     if i % 100 == 0 and i > 0:
@@ -89,19 +91,20 @@ for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()
 
     tag_embedding_tensor = torch.from_numpy(tag_np_embedding).cuda()
 
-    # distances = dist(img_embeddings_tensor, tag_embedding_tensor)
-    # distances = np.array(distances.cpu())
-    # # Sort images by distance to tag
-    # indices_sorted = np.argsort(distances)[0:precision_k]
-
     if measure == 'distance':
         distances = dist(img_embeddings_tensor, tag_embedding_tensor)
         indices_sorted = np.array(distances.sort(descending=False)[1][0:precision_k].cpu())
+
+    elif measure == 'cosineSim':
+        similarities = cosSim(img_embeddings_tensor, tag_embedding_tensor)
+        indices_sorted = np.array(distances.sort(descending=True)[1][0:precision_k].cpu())
+
 
     # Need to apply softmax though images scores for each tag!
     # elif measure == 'dotP':
     #     products = img_embeddings_tensor.mm(tag_embedding_tensor.reshape(1,-1).t()).view(-1)
     #     indices_sorted = np.array(products.sort(descending=True)[1][0:precision_k].cpu())
+
     else:
         print("Measure not found: " + str(measure))
         break

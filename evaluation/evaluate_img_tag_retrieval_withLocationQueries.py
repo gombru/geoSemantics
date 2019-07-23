@@ -17,7 +17,15 @@ import geopy.distance
 def check_location(lat1,lon1,lat2,lon2):
     coords_1 = (lat1,lon1)
     coords_2 = (lat2, lon2)
-    distance_km = geopy.distance.vincenty(coords_1, coords_2).km
+
+    try:
+        distance_km = geopy.distance.vincenty(coords_1, coords_2).km
+    except:
+        print("Error computing distance with gropy. Values:")
+        print(coords_1)
+        print(coords_2)
+        distance_km = 100000
+
     results = np.zeros(len(granularities))
     for i,gr in enumerate(granularities):
         if distance_km <= gr:
@@ -32,18 +40,18 @@ granularities_str = ['street level (1km)', 'city (25km)', 'region (200km)', 'cou
 
 dataset = '../../../hd/datasets/YFCC100M/'
 queries_file = dataset + 'geosensitive_queries/queries.txt'
-model_name = 'YFCC_NCSL_3rdtraining_epoch_3_ValLoss_0.37.pth'
+model_name = 'YFCC_NCSL_3rdtraining_epoch_3_ValLoss_0.37'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 img_embeddings_path = dataset + 'results/' + model_name + '/images_embeddings_test.json'
 # tags_embeddings_path = dataset + 'results/' + model_name + '/tags_embeddings.json'
-# If using GloVe embeddings directly
+# If using GloVe embeddings directly 370111
 print("Using GloVe embeddings")
 tags_embeddings_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
 embedding_dim = 300
 precision_k = 10  # Compute precision at k
 save_img = False  # Save some random image retrieval results
 
-measure = 'cosineSim' # 'distance', 'cosineSim', 'dotP'
+measure = 'distance' # 'distance', 'cosineSim', 'dotP'
 
 distance_norm = 1 # 2
 if measure == 'distance':
@@ -58,6 +66,7 @@ print("Reading imgs embeddings ...")
 img_embeddings = json.load(open(img_embeddings_path))
 print("Reading tags of testing images ...")
 test_images_tags, test_images_latitudes, test_images_longitudes = aux.read_tags_and_locations(test_split_path)
+print("Num test images read: " + str(len(test_images_tags)))
 
 if normalize:
     print("Using L2 normalization on img AND tag embeddings")
@@ -112,7 +121,7 @@ cosSim = nn.CosineSimilarity(dim=1, eps=1e-6)
 precisions = np.zeros(len(granularities), dtype=np.float32)
 ignored = 0
 used = 0
-for i, cur_tag in query_tags:
+for i, cur_tag in enumerate(query_tags):
 
     if cur_tag not in tags_test_histogram_filtered:
         ignored+=1
@@ -120,16 +129,20 @@ for i, cur_tag in query_tags:
 
     used+=1
 
-    if i % 100 == 0 and i > 0:
+    if i % 500 == 0 and i > 0:
         print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*precisions[0]/i))
+        print(precisions)
 
-    tag_np_embedding = np.asarray(tags_embeddings[tag], dtype=np.float32)
+    tag_np_embedding = np.asarray(tags_embeddings[cur_tag], dtype=np.float32)
     if normalize:
         tag_np_embedding /= np.linalg.norm(tag_np_embedding)
 
     tag_embedding_tensor = torch.from_numpy(tag_np_embedding).cuda()
 
     if measure == 'distance':
+        # print("Shapes")
+        # print(img_embeddings_tensor.shape)
+        # print(tag_embedding_tensor.shape)
         distances = dist(img_embeddings_tensor, tag_embedding_tensor)
         indices_sorted = np.array(distances.sort(descending=False)[1][0:precision_k].cpu())
 
@@ -152,9 +165,9 @@ for i, cur_tag in query_tags:
     correct = False
     precisions_tag = np.zeros(len(granularities), dtype=np.float32)
     for top_img_idx in indices_sorted:
-        if cur_tag in test_images_tags[int(top_img_idx)]:
+        if cur_tag in test_images_tags[int(img_ids[top_img_idx])]:
             # The image has query tag. Now check its location!
-            results = check_location(query_lats[i], query_lons[i], test_images_latitudes[int(top_img_idx)], test_images_longitudes[int(top_img_idx)])
+            results = check_location(query_lats[i], query_lons[i], test_images_latitudes[int(img_ids[top_img_idx])], test_images_longitudes[int(img_ids[top_img_idx])])
             for r_i,r in enumerate(results):
                 if r == 1:
                     precisions_tag[r_i] += 1

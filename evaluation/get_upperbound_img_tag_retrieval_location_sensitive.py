@@ -18,24 +18,26 @@ import json
 import numpy as np
 import geopy.distance
 
+granularities = [90000000000, 2500, 750, 200, 25, 1]  # granularities in km
+granularities_str = ['street level (1km)', 'city (25km)', 'region (200km)', 'country (750km)', 'continent (2500km)',
+                     'not sensitive (inf)']
 
-granularities = [90000000000,2500,750,200,25,1] # granularities in km
-granularities_str = ['street level (1km)', 'city (25km)', 'region (200km)', 'country (750km)', 'continent (2500km)', 'not sensitive (inf)']
 
-def check_location(lat1,lon1,lat2,lon2):
-    coords_1 = (lat1,lon1)
+def check_location(lat1, lon1, lat2, lon2):
+    coords_1 = (lat1, lon1)
     coords_2 = (lat2, lon2)
     distance_km = geopy.distance.vincenty(coords_1, coords_2).km
     results = np.zeros(len(granularities))
-    for i,gr in enumerate(granularities):
+    for i, gr in enumerate(granularities):
         if distance_km <= gr:
             results[i] = 1
         else:
             break
     return results
 
-def get_distance(lat1,lon1,lat2,lon2):
-    coords_1 = (lat1,lon1)
+
+def get_distance(lat1, lon1, lat2, lon2):
+    coords_1 = (lat1, lon1)
     coords_2 = (lat2, lon2)
     try:
         distance_km = geopy.distance.vincenty(coords_1, coords_2).km
@@ -46,14 +48,14 @@ def get_distance(lat1,lon1,lat2,lon2):
         distance_km = 100000
     return distance_km
 
+
 dataset = '../../../datasets/YFCC100M/'
-model_name = 'geoModel_to_test' # Only used to get the queries
+model_name = 'geoModel_to_test'  # Only used to get the queries
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 top_img_per_tag_path = dataset + 'results/' + model_name + '/tagLoc_top_img.json'
 
 precision_k = 10  # Compute precision at k
 save_img = False  # Save some random image retrieval results
-
 
 print("Loading tag list ...")
 tags_file = '../../../datasets/YFCC100M/vocab/vocab_words_100k.txt'
@@ -90,7 +92,6 @@ for k, v in tags_test_histogram.items():
 print("Total tags in test images with more than " + str(precision_k) + " appearances: " + str(
     len(tags_test_histogram_filtered)))
 
-
 print("Starting per-tag evaluation")
 precisions = np.zeros(len(granularities), dtype=np.float32)
 ignored = 0
@@ -99,21 +100,22 @@ for i, (pair_info, cur_tag_top_img) in enumerate(top_img_per_tag.items()):
 
     d = pair_info.split(',')
     cur_tag = d[0]
-    cur_lat = float(d[1]) * 180 - 90 # + 90) / 180
-    cur_lon = float(d[2]) * 360 - 180 #  180) / 360
+    cur_lat = float(d[1]) * 180 - 90  # + 90) / 180
+    cur_lon = float(d[2]) * 360 - 180  # 180) / 360
 
     if cur_tag not in tags_test_histogram_filtered:
-        ignored+=1
+        ignored += 1
         continue
 
     if i % 1 == 0 and i > 0:
-        print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*precisions[0]/used))
+        print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100 * precisions[0] / used))
 
     # Get cur_tag_top_img using GT
     images_2_check = {}
     for test_img, test_img_tags in test_images_tags.items():
         if cur_tag in test_img_tags:
-            images_2_check[test_img] = get_distance(cur_lat, cur_lon, test_images_latitudes[test_img], test_images_longitudes[test_img])
+            images_2_check[test_img] = get_distance(cur_lat, cur_lon, test_images_latitudes[test_img],
+                                                    test_images_longitudes[test_img])
             # print(images_2_check[test_img])
             # print(str(cur_lat) + ' \t ' + str(cur_lon)+ ' \t ' + str(test_images_latitudes[test_img]) + ' \t '+str(test_images_longitudes[test_img]))
     images_2_check = sorted(images_2_check.items(), key=lambda x: x[1], reverse=False)
@@ -127,27 +129,27 @@ for i, (pair_info, cur_tag_top_img) in enumerate(top_img_per_tag.items()):
     for top_img_idx in cur_tag_top_img:
         if cur_tag in test_images_tags[int(top_img_idx)]:
             # The image has query tag. Now check its location!
-            results = check_location(cur_lat, cur_lon, test_images_latitudes[int(top_img_idx)], test_images_longitudes[int(top_img_idx)])
-            if results[0] !=1:
+            results = check_location(cur_lat, cur_lon, test_images_latitudes[int(top_img_idx)],
+                                     test_images_longitudes[int(top_img_idx)])
+            if results[0] != 1:
                 print("ERROR! Incorrect location for inf theshold")
                 exit()
-            for r_i,r in enumerate(results):
+            for r_i, r in enumerate(results):
                 if r == 1:
                     precisions_tag[r_i] += 1
         else:
             print("ERROR! Tag nor found in test image")
             exit()
 
-
     precisions_tag /= precision_k
 
     if precisions_tag[3] > 0.2:
         correct = True
 
-    precisions += precisions_tag
-    print("Precisions: " + str(precisions))
+    used += 1
 
-    used+=1
+    precisions += precisions_tag
+    print("Precisions: " + str(100 * (precisions / used)))
 
     # Save img
     if save_img and correct and random.randint(0, 100) < 5:
@@ -166,5 +168,5 @@ print("Used query pairs: " + str(used))
 print("Ignored pairs: " + str(ignored))
 print("Location Sensitive Precision at " + str(precision_k) + ":")
 
-for i,p in enumerate(precisions):
-    print(granularities_str[-i-1] + ': ' + str(p))
+for i, p in enumerate(precisions):
+    print(granularities_str[-i - 1] + ': ' + str(p))

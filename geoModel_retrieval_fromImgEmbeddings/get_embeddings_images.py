@@ -16,7 +16,7 @@ img_backbone_model = 'YFCC_NCSL_2ndtraining_epoch_16_ValLoss_0.38'
 split = 'test.txt'
 
 batch_size = 1024
-workers = 6
+workers = 0
 embedding_dims = 1024
 
 model_name = 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1_epoch_8_ValLoss_0.42.pth'
