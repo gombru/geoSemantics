@@ -16,10 +16,10 @@ class YFCC_Dataset(Dataset):
 
         if 'train' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/train_filtered.txt'
-            self.num_elements = 102400
+            # self.num_elements = 102400
         elif 'val' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/val.txt'
-            self.num_elements = 2048 * 2
+            # self.num_elements = 2048 * 2
         else:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/test.txt'
 
@@ -37,7 +37,7 @@ class YFCC_Dataset(Dataset):
 
         # Count number of elements
         print("Opening dataset ...")
-        # self.num_elements = sum(1 for line in open(self.root_dir + '/splits/' + split))
+        self.num_elements = sum(1 for line in open(self.root_dir + '/splits/' + split))
 
         # Initialize containers
         self.img_ids = np.zeros(self.num_elements, dtype=np.uint64)

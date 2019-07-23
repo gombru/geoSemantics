@@ -8,7 +8,7 @@ import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Configg
-training_id = 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1_2ndtraining_test'
+training_id = 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1_2ndtraining'
 dataset = '../../../datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
 split_val = 'val.txt'
@@ -32,7 +32,7 @@ best_correct_pairs = 0
 best_loss = 1000
 
 # Optimizer (SGD)
-lr = 0.25 # 0.1
+lr = 0.05 # 0.1
 momentum = 0.9
 weight_decay = 1e-4
 
