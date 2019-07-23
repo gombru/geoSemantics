@@ -14,7 +14,7 @@ import json
 import numpy as np
 
 dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'YFCC_ranking_tags_average_softNegative_epoch_2_ValLoss_0.37'
+model_name = 'YFCC_NCSL_3rdtraining_epoch_3_ValLoss_0.37'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 img_embeddings_path = dataset + 'results/' + model_name + '/images_embeddings_test.json'
 # tags_embeddings_path = dataset + 'results/' + model_name + '/tags_embeddings.json'
@@ -25,13 +25,13 @@ embedding_dim = 300
 precision_k = 10  # Compute precision at k
 save_img = False  # Save some random image retrieval results
 
-measure = 'cosineSim' # 'distance', 'cosineSim', 'dotP'
+measure = 'distance' # 'distance', 'cosineSim', 'dotP'
 
-distance_norm = 2 # 2
+distance_norm = 1 # 2
 if measure == 'distance':
     print("Using pairwise distance with norm: " + str(distance_norm))
 
-normalize = False # Normalize img embeddings and tag embeddings using L2 norm
+normalize = True # Normalize img embeddings and tag embeddings using L2 norm
 print("Normalize tags and img embeddings: " + str(normalize))
 
 print("Reading tags embeddings ...")
@@ -41,8 +41,13 @@ img_embeddings = json.load(open(img_embeddings_path))
 print("Reading tags of testing images ...")
 test_images_tags = aux.read_tags(test_split_path)
 
+out_freq_file = dataset + '/precisions_by_freqs/' + model_name + '.json'
+precisions_by_freqs = {}
+
+
 if normalize:
     print("Using L2 normalization on img AND tag embeddings")
+
 
 print("Get tags with at least k appearances in test images")
 tags_test_histogram = {}
@@ -130,6 +135,12 @@ for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()
             copyfile('../../../datasets/YFCC100M/test_img/' + img_ids[idx] + '.jpg',
                      dataset + '/retrieval_results/' + model_name + '/' + tag + '/' + img_ids[idx] + '.jpg')
 
+    precisions_by_freqs[tag] = {}
+    precisions_by_freqs[tag]['test_appearances'] = test_appearances
+    precisions_by_freqs[tag]['precision'] = precision_tag
+
 total_precision /= len(tags_test_histogram_filtered)
 
 print("Precision at " + str(precision_k) + ": " + str(total_precision*100))
+
+json.dump(precisions_by_freqs, open(out_freq_file,'w'))

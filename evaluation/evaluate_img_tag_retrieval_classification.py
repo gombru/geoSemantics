@@ -14,9 +14,12 @@ import json
 import numpy as np
 
 dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'YFCC_MCLL_epoch_14_ValLoss_7.45'
+model_name = 'YFCC_MCLL_2ndtraining_epoch_5_ValLoss_6.55'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 top_img_per_tag_path = dataset + 'results/' + model_name + '/tags_top_img.json'
+
+out_freq_file = dataset + '/precisions_by_freqs/' + model_name + '.json'
+precisions_by_freqs = {}
 
 precision_k = 10  # Compute precision at k
 save_img = False  # Save some random image retrieval results
@@ -87,6 +90,12 @@ for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()
             copyfile('../../../datasets/YFCC100M/test_img/' + str(top_img_idx) + '.jpg',
                      dataset + '/retrieval_results/' + model_name + '/' + tag + '/' + str(top_img_idx) + '.jpg')
 
+    precisions_by_freqs[tag] = {}
+    precisions_by_freqs[tag]['test_appearances'] = test_appearances
+    precisions_by_freqs[tag]['precision'] = precision_tag
+
 total_precision /= len(tags_test_histogram_filtered)
 
 print("Precision at " + str(precision_k) + ": " + str(total_precision*100))
+
+json.dump(precisions_by_freqs, open(out_freq_file,'w'))

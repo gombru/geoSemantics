@@ -104,11 +104,11 @@ for i, cur_tag in enumerate(query_tags):
 
     used+=1
 
-    if i % 500 == 0 and i > 0:
+    if i % 5000 == 0 and i > 0:
         print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*precisions[0]/i))
         print(precisions)
 
-    top_img_curTag = top_img_per_tag[str(tags_list.index(tag))]
+    top_img_curTag = top_img_per_tag[str(tags_list.index(cur_tag))]
 
     # Compute Precision at k
     correct = False
