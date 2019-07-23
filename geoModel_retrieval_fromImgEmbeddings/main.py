@@ -8,24 +8,24 @@ import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Configg
-training_id = 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1'
-dataset = '../../../hd/datasets/YFCC100M/'
+training_id = 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1_2ndtraining_test'
+dataset = '../../../datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
 split_val = 'val.txt'
 
-img_embeddings_folder = dataset + 'img_embeddings/' + 'YFCC_NCSL_2ndtraining_epoch_16_ValLoss_0.38'
+img_embeddings_folder = 'YFCC_NCSL_2ndtraining_epoch_16_ValLoss_0.38'
 
 margin = 1
 norm_degree = 2
 
 gpus = [0]
 gpu = 0
-workers = 3 # 8 Num of data loading workers
+workers = 0 # 8 Num of data loading workers
 epochs = 10000
 start_epoch = 0 # Useful on restarts
 batch_size = 1024 # 600 # 1024 # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
-resume = None # dataset + 'models/saved/' + 'geoModel_ranking_allConcatenated_randomTriplets_M2_100k_epoch_1.pth.tar'  # Path to checkpoint top resume training
+resume = dataset + 'models/saved/' + 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1_epoch_8_ValLoss_0.42.pth.tar'  # Path to checkpoint top resume training
 plot = True
 best_epoch = 0
 best_correct_pairs = 0

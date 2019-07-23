@@ -6,22 +6,20 @@ import json
 import random
 import model
 import numpy as np
-from PIL import Image
-import image_processing
-
 
 class YFCC_Dataset(Dataset):
     def __init__(self, root_dir, split, img_backbone_model):
 
         self.root_dir = root_dir
         self.split = split
+        self.img_backbone_model = img_backbone_model
 
         if 'train' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/train_filtered.txt'
-            self.num_elements = 10240
+            self.num_elements = 102400
         elif 'val' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/val.txt'
-            self.num_elements = 2048
+            self.num_elements = 2048 * 2
         else:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/test.txt'
 
@@ -36,13 +34,6 @@ class YFCC_Dataset(Dataset):
             v = np.asarray(v, dtype=np.float32)
             self.text_model[k] = v / np.linalg.norm(v, 2)
         self.tags_list = list(self.text_model.keys())
-
-        if 'train' in self.split:
-            self.root_dir = root_dir.replace('/hd/datasets/','/ssd2/') + 'train_img/'
-            self.num_elements = 650*25
-        else:
-            self.root_dir = root_dir.replace('/hd/datasets/', '/datasets/')  + 'val_img/'
-            self.num_elements = 650*2
 
         # Count number of elements
         print("Opening dataset ...")
