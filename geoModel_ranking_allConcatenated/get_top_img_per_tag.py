@@ -29,7 +29,7 @@ gpu = 0
 if not os.path.exists(dataset_folder + 'results/' + model_name):
     os.makedirs(dataset_folder + 'results/' + model_name)
 
-output_file_path = dataset_folder + 'results/' + model_name + '/tagLoc_top_img.json'
+output_file_path = dataset_folder + 'results/' + model_name + '/tags_top_img.json'
 output_file = open(output_file_path, "w")
 
 state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.tar',
@@ -65,6 +65,12 @@ tags_tensor = np.zeros([100000,300],  dtype=np.float32)
 latitudes_tensor = np.zeros([100000,1],  dtype=np.float32)
 longitudes_tensor = np.zeros([100000,1],  dtype=np.float32)
 
+print("Loading tag list ...")
+tags_file = '../../../datasets/YFCC100M/vocab/vocab_words_100k.txt'
+for line in open(tags_file):
+    tags_names.append(line.replace('\n',''))
+
+
 for i,(k,v) in enumerate(text_model.items()):
     tags_tensor[i,:] = text_model[k]
     tags_names.append(k)
@@ -76,6 +82,8 @@ longitudes_tensor = torch.from_numpy(longitudes_tensor).cuda()
 with torch.no_grad():
     model_test.eval()
     for i, (img_id, image) in enumerate(test_loader):
+
+        if i == 500: break
 
         image_var = torch.autograd.Variable(image)
         scores = model_test(image_var, tags_tensor, latitudes_tensor, longitudes_tensor)
@@ -90,8 +98,7 @@ with torch.no_grad():
 print("Generating results")
 results = {}
 for i in range(0,100000):
-    key = tags_names[i]
-    results[key] = top_img_per_tagLoc_indices[i,:].cpu().detach().numpy().astype(int).tolist()
+    results[i] = top_img_per_tagLoc_indices[i,:].cpu().detach().numpy().astype(int).tolist()
 
 print("Writing results")
 json.dump(results, output_file)

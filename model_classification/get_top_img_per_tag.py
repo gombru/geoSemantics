@@ -28,7 +28,7 @@ if not os.path.exists(dataset_folder + 'results/' + model_name):
     os.makedirs(dataset_folder + 'results/' + model_name)
 
 output_file_path = dataset_folder + 'results/' + model_name + '/tags_top_img.json'
-output_file = open(output_file_path, "w")
+output_file = open(outop_img_per_tag_indicestput_file_path, "w")
 
 state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.tar',
                         map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
