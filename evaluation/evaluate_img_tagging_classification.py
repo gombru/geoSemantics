@@ -11,8 +11,8 @@ import os
 import json
 import numpy as np
 
-dataset = '../../../datasets/YFCC100M/'
-model_name = 'geoModel_ranking_allConcatenated_randomTriplets_M2_8_epoch_9999.pth'
+dataset = '../../../hd/datasets/YFCC100M/'
+model_name = 'YFCC_MLC_fromIN_iter_50000_TrainLoss_0.02'
 model_name = model_name.replace('.pth', '')
 print(model_name)
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
@@ -59,9 +59,6 @@ for i, (img_id, img_result) in enumerate(results.items()):
             total_accuracy_at_k += 1
             break
 
-    print("Result")
-    print(aux)
-    print(test_images_tags[img_id])
 
     # print("Result")
     # print(aux)

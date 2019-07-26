@@ -18,8 +18,10 @@ class YFCC_Dataset(Dataset):
 
         if 'train' in self.split:
             self.root_dir = root_dir.replace('/hd/datasets/','/ssd2/') + 'train_img/'
+            self.num_elements = 70*5
         else:
             self.root_dir = root_dir.replace('/hd/datasets/', '/datasets/')  + 'val_img/'
+            self.num_elements = 70*4
 
         print("Loading tag list ...")
         tags_file = '../../../datasets/YFCC100M/vocab/vocab_words_100k.txt'
@@ -29,8 +31,7 @@ class YFCC_Dataset(Dataset):
 
         # Count number of elements
         print("Opening dataset ...")
-        self.num_elements = sum(1 for line in open('../../../datasets/YFCC100M/splits/' + split))
-        # self.num_elements = 20000
+        # self.num_elements = sum(1 for line in open('../../../datasets/YFCC100M/splits/' + split))
         print("Number of elements in " + split + ": " + str(self.num_elements))
 
         # Initialize containers
@@ -41,7 +42,7 @@ class YFCC_Dataset(Dataset):
         print("Reading data ...")
         for i,line in enumerate(open('../../../datasets/YFCC100M/splits/' + split)):
             if i % 500000 == 0 and i != 0: print(i)
-            # if i == 20000: break
+            if i == self.num_elements: break
             data = line.split(';')
             self.img_ids[i] = int(data[0])
             img_tags = data[1].split(',')

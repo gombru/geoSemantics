@@ -63,6 +63,7 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
                    epoch, i, len(train_loader), batch_time=batch_time,
                    data_time=data_time, loss=loss_meter, correct_triplets=correct_triplets))
 
+
     plot_data['train_loss'][plot_data['epoch']] = loss_meter.avg
     plot_data['train_correct_triplets'][plot_data['epoch']] = correct_triplets.avg
 

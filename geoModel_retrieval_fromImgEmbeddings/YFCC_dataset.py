@@ -7,6 +7,7 @@ import random
 import model
 import numpy as np
 
+
 class YFCC_Dataset(Dataset):
     def __init__(self, root_dir, split, img_backbone_model):
 
@@ -23,16 +24,17 @@ class YFCC_Dataset(Dataset):
         else:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/test.txt'
 
-
         # Load GenSim Word2Vec model
         print("Loading textual model ...")
         text_model_path = '../../../datasets/YFCC100M/' + '/vocab/vocab_100k.json'
         self.text_model = json.load(open(text_model_path))
         print("Vocabulary size: " + str(len(self.text_model)))
-        print("Normalizing vocab")
-        for k, v in self.text_model.items():
-            v = np.asarray(v, dtype=np.float32)
-            self.text_model[k] = v / np.linalg.norm(v, 2)
+
+        # print("Normalizing vocab")
+        # for k, v in self.text_model.items():
+        #     v = np.asarray(v, dtype=np.float32)
+        #     self.text_model[k] = v / np.linalg.norm(v, 2)
+
         self.tags_list = list(self.text_model.keys())
 
         # Count number of elements
@@ -76,10 +78,9 @@ class YFCC_Dataset(Dataset):
             d = line.split(',')
             img_id = int(d[0])
             img_em = np.asarray(d[1:], dtype=np.float32)
-            img_em = img_em / np.linalg.norm(img_em, 2)
+            # img_em = img_em / np.linalg.norm(img_em, 2)
             self.img_embeddings[img_id] = img_em
         print("Img embeddings loaded: " + str(img_em_c))
-
 
     def __len__(self):
         return len(self.img_ids)
@@ -102,7 +103,6 @@ class YFCC_Dataset(Dataset):
         tag = self.__getwordembedding__(tag_str)
         lat = self.latitudes[idx]
         lon = self.longitudes[idx]
-
 
         #### Negatives selection
         ### Random negative imagen (not sharing the selected tag)
@@ -130,6 +130,5 @@ class YFCC_Dataset(Dataset):
         tag = torch.from_numpy(tag)
         lat = torch.from_numpy(np.array([lat], dtype=np.float32))
         lon = torch.from_numpy(np.array([lon], dtype=np.float32))
-
 
         return img_p, img_n, tag, lat, lon

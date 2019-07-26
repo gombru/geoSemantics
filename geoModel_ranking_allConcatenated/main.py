@@ -8,14 +8,14 @@ import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Config
-training_id = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_M1'
+training_id = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_2ndtraining'
 dataset = '../../../datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
 split_val = 'val.txt'
 
 img_backbone_model = 'YFCC_NCSL_2ndtraining_epoch_16_ValLoss_0.38'
 
-margin = 1
+margin = 0.1
 
 gpus = [0]
 gpu = 0
@@ -24,14 +24,14 @@ epochs = 10000
 start_epoch = 0 # Useful on restarts
 batch_size = 1024 # 1024 # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
-resume = None # dataset + 'models/saved/' + 'geoModel_ranking_allConcatenated_randomTriplets_M2_100k_epoch_1.pth.tar'  # Path to checkpoint top resume training
+resume = dataset + 'models/saved/' + 'geoModel_ranking_allConcatenated_randomTriplets6Neg_epoch_9_ValLoss_0.04.pth.tar'  # Path to checkpoint top resume training
 plot = True
 best_epoch = 0
 best_correct_pairs = 0
 best_loss = 1000
 
 # Optimizer (SGD)
-lr = 0.1 # 0.1
+lr =  0.25 # 0.25, 1
 momentum = 0.9
 weight_decay = 1e-4
 
@@ -81,7 +81,7 @@ ax1.set_xlabel('epoch')
 ax1.set_ylabel('train loss (r), val loss (y)')
 ax2.set_ylabel('train correct pairs (b), val correct pairs (g)')
 ax2.set_autoscaley_on(False)
-ax1.set_ylim([0, 1.02])
+ax1.set_ylim([0, 0.1])
 ax2.set_ylim([0, batch_size + 0.2])
 
 print("Dataset and model ready. Starting training ...")
@@ -103,7 +103,7 @@ for epoch in range(start_epoch, epochs):
         best_loss = plot_data['val_loss'][epoch]
         filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2))
         prefix_len = len('_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2)))
-        train.save_checkpoint(model, filename, prefix_len)
+        train_multiple_negatives.save_checkpoint(model, filename, prefix_len)
 
     if plot:
         ax1.plot(it_axes[0:epoch+1], plot_data['train_loss'][0:epoch+1], 'r')
@@ -127,5 +127,5 @@ for epoch in range(start_epoch, epochs):
 print("Finished Training, saving checkpoint")
 filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch)
 prefix_len = len('_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2)))
-train.save_checkpoint(model, filename, prefix_len)
+train_multiple_negatives.save_checkpoint(model, filename, prefix_len)
 

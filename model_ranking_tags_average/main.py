@@ -8,31 +8,31 @@ import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Config
-training_id = 'YFCC_ranking_tags_average'
+training_id = 'YFCC_ranking_tags_average_softNegativeNormalized_NotNormalized'
 dataset = '../../../hd/datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
 split_val = 'val.txt'
 
-margin = 1
+margin = 0.1
 norm_degree = 2 # The norm degree for pairwise distance
 embedding_dims= 300
 
 ImgSize = 224
-gpus = [0]
-gpu = 0
+gpus = [3]
+gpu = 3
 workers = 2 # Num of data loading workers
 epochs = 301
 start_epoch = 0 # Useful on restarts
 batch_size = 100 * len(gpus) # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
-resume = None  # Path to checkpoint top resume training
+resume = dataset + 'models/saved/YFCC_ranking_tags_average_softNegativeNormalized_NotNormalized_miniTrain_epoch_4_ValLoss_0.09.pth.tar' # Path to checkpoint top resume training
 plot = True
 best_epoch = 0
 best_correct_triplets = 0
 best_loss = 1000
 
 # Optimizer (SGD)
-lr = 0.8 * 1e-1 * len(gpus)
+lr = 0.025 * len(gpus) # 0.05 best right now, then 0.025
 momentum = 0.9
 weight_decay = 1e-4
 
@@ -50,7 +50,7 @@ optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight
 if resume:
     print("Loading pretrained model")
     print("=> loading checkpoint '{}'".format(resume))
-    checkpoint = torch.load(resume, map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
+    checkpoint = torch.load(resume, map_location={'cuda:1':'cuda:3', 'cuda:2':'cuda:3', 'cuda:1':'cuda:3'})
     model.load_state_dict(checkpoint, strict=False)
     print("Checkpoint loaded")
 
@@ -84,7 +84,7 @@ ax1.set_xlabel('epoch')
 ax1.set_ylabel('train loss (r), val loss (y)')
 ax2.set_ylabel('train correct triplets (b), val correct triplets (g)')
 ax2.set_autoscaley_on(False)
-ax1.set_ylim([0, 1])
+ax1.set_ylim([0, 0.1])
 ax2.set_ylim([0, batch_size])
 
 print("Dataset and model ready. Starting training ...")
@@ -100,7 +100,7 @@ for epoch in range(start_epoch, epochs):
 
     # Remember best model and save checkpoint
     is_best = plot_data['val_loss'][epoch] < best_loss
-    if is_best and epoch != 0:
+    if is_best:
         print("New best model by loss. Val Loss = " + str(plot_data['val_loss'][epoch]))
         best_loss = plot_data['val_loss'][epoch]
         filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2))
@@ -108,11 +108,11 @@ for epoch in range(start_epoch, epochs):
         train.save_checkpoint(model, filename, prefix_len)
 
     if plot:
-        ax1.plot(it_axes[0:epoch], plot_data['train_loss'][0:epoch], 'r')
-        ax2.plot(it_axes[0:epoch], plot_data['train_correct_triplets'][0:epoch], 'b')
+        ax1.plot(it_axes[0:epoch+1], plot_data['train_loss'][0:epoch+1], 'r')
+        ax2.plot(it_axes[0:epoch+1], plot_data['train_correct_triplets'][0:epoch+1], 'b')
 
-        ax1.plot(it_axes[0:epoch], plot_data['val_loss'][0:epoch], 'y')
-        ax2.plot(it_axes[0:epoch], plot_data['val_correct_triplets'][0:epoch], 'g')
+        ax1.plot(it_axes[0:epoch+1], plot_data['val_loss'][0:epoch+1], 'y')
+        ax2.plot(it_axes[0:epoch+1], plot_data['val_correct_triplets'][0:epoch+1], 'g')
 
         plt.title(training_id)
         plt.ion()

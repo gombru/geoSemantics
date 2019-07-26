@@ -39,6 +39,7 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
 
         # compute output
         output = model(image_var)
+
         loss = criterion(output, target_var)
 
         # measure and record loss

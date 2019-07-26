@@ -17,7 +17,7 @@ batch_size = 1024
 workers = 0
 embedding_dims = 1024
 
-model_name = 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1_epoch_8_ValLoss_0.42.pth'
+model_name = 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1_NotNorm_3rdTraining_lr0_01_epoch_34_ValLoss_0.36.pth'
 model_name = model_name.strip('.pth')
 
 gpus = [0]
@@ -30,7 +30,7 @@ if not os.path.exists(dataset_folder + 'results/' + model_name):
 output_file_path = dataset_folder + 'results/' + model_name + '/queries_embeddings.json'
 output_file = open(output_file_path, "w")
 
-state_dict = torch.load(dataset_folder + '/models/' + model_name + '.pth.tar',
+state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.tar',
                         map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
 
 
@@ -46,15 +46,15 @@ out_img_embeddings = {}
 
 with torch.no_grad():
     model_test.eval()
-    for i, (tag_str, tag, lat, lon) in enumerate(test_loader):
+    for i, (tag_str, tag, lat, lon, lat_str, lon_str) in enumerate(test_loader):
         tag_var = torch.autograd.Variable(tag)
-        lat_var = torch.autograd.Variable(lat)
-        lon_var = torch.autograd.Variable(lon)
+        lat_var = torch.autograd.Variable(lat * 0)
+        lon_var = torch.autograd.Variable(lon * 0)
 
         outputs = model_test(tag_var,lat_var,lon_var)
 
         for idx,embedding in enumerate(outputs):
-            key = str(tag_str[idx]) + ',' + str(lat[idx]) + ',' + str(lon[idx])
+            key = str(tag_str[idx]) + ',' + str(lat_str[idx]) + ',' + str(lon_str[idx])
             out_img_embeddings[key] = np.array(embedding.cpu()).tolist()
         print(str(i) + ' / ' + str(len(test_loader)))
 

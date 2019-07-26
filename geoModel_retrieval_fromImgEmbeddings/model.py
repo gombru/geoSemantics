@@ -52,7 +52,7 @@ class MMNet(nn.Module):
         # img layers
         self.fc_i_1 = BasicFC_BN(300, 1024)
         self.fc_i_2 = nn.Linear(1024, 1024)
-        self.fc_i_3 = nn.Linear(1024, 1024)
+        self.fc_i_3_n = nn.Linear(1024, 300)
 
         # loc layers
         self.fc_loc = BasicFC_BN(2, 10)
@@ -61,17 +61,17 @@ class MMNet(nn.Module):
         self.fc_mm_1 = BasicFC_BN(310, 1024)
         self.fc_mm_2 = BasicFC_BN(1024, 1024)
         self.fc_mm_3 = BasicFC_BN(1024, 1024)
-        self.fc_mm_4 = nn.Linear(1024, 1024)
+        self.fc_mm_4_n = nn.Linear(1024, 300)
 
     def forward(self, img_p, img_n, tag, lat, lon):
         # Images embeddings processing
         img_p = self.fc_i_1(img_p)
         img_p = self.fc_i_2(img_p)
-        img_p = self.fc_i_3(img_p)
+        img_p = self.fc_i_3_n(img_p)
 
         img_n = self.fc_i_1(img_n)
         img_n = self.fc_i_2(img_n)
-        img_n = self.fc_i_3(img_n)
+        img_n = self.fc_i_3_n(img_n)
 
         # Location
         loc = torch.cat((lat, lon), dim=1)
@@ -82,7 +82,7 @@ class MMNet(nn.Module):
         anchor = self.fc_mm_1(anchor)
         anchor = self.fc_mm_2(anchor)
         anchor = self.fc_mm_3(anchor)
-        anchor = self.fc_mm_4(anchor)
+        anchor = self.fc_mm_4_n(anchor)
 
         return img_p, img_n, anchor
 

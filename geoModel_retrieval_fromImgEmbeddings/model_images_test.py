@@ -21,13 +21,13 @@ class MMNet(nn.Module):
         # img layers
         self.fc_i_1 = BasicFC_BN(300, 1024)
         self.fc_i_2 = nn.Linear(1024, 1024)
-        self.fc_i_3 = nn.Linear(1024, 1024)
+        self.fc_i_3_n = nn.Linear(1024, 300)
 
     def forward(self, img):
         # Images embeddings processing
         img = self.fc_i_1(img)
         img = self.fc_i_2(img)
-        img = self.fc_i_3(img)
+        img = self.fc_i_3_n(img)
 
         return img
 

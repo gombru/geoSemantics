@@ -2,7 +2,6 @@
 
 import os
 import torch
-import models_test
 import YFCC_dataset_images_test
 import torch.utils.data
 import torch.nn as nn
@@ -17,14 +16,13 @@ split = 'test.txt'
 
 batch_size = 1024
 workers = 0
-embedding_dims = 1024
 
-model_name = 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1_epoch_8_ValLoss_0.42.pth'
+model_name = 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1_NotNorm_3rdTraining_lr0_01_epoch_34_ValLoss_0.36.pth'
 model_name = model_name.strip('.pth')
 
-gpus = [1]
-gpu = 1
-CUDA_VISIBLE_DEVICES = 1
+gpus = [0]
+gpu = 0
+CUDA_VISIBLE_DEVICES = 0
 
 if not os.path.exists(dataset_folder + 'results/' + model_name):
     os.makedirs(dataset_folder + 'results/' + model_name)
@@ -32,15 +30,15 @@ if not os.path.exists(dataset_folder + 'results/' + model_name):
 output_file_path = dataset_folder + 'results/' + model_name + '/images_embeddings_test.json'
 output_file = open(output_file_path, "w")
 
-state_dict = torch.load(dataset_folder + '/models/' + model_name + '.pth.tar',
+state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.tar',
                         map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
 
 
-model_test = model_images_test.Model(embedding_dims=embedding_dims)
+model_test = model_images_test.Model()
 model_test = torch.nn.DataParallel(model_test, device_ids=gpus).cuda(gpu)
 model_test.load_state_dict(state_dict, strict=False)
 
-test_dataset = YFCC_dataset_images_test.YFCC_Dataset_Images_Test(dataset_folder, split, img_backbone_model)
+test_dataset = YFCC_dataset_images_test.YFCC_Dataset(dataset_folder, split, img_backbone_model)
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=workers,
                                           pin_memory=True)
 

@@ -8,7 +8,7 @@ import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Configg
-training_id = 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1_2ndtraining'
+training_id = 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1_NotNorm_3rdTraining_lr0_01'
 dataset = '../../../datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
 split_val = 'val.txt'
@@ -25,14 +25,14 @@ epochs = 10000
 start_epoch = 0 # Useful on restarts
 batch_size = 1024 # 600 # 1024 # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
-resume = dataset + 'models/saved/' + 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1_epoch_8_ValLoss_0.42.pth.tar'  # Path to checkpoint top resume training
+resume = dataset + 'models/saved/' + 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1_NotNorm_epoch_3_ValLoss_0.39.pth.tar'  # Path to checkpoint top resume training
 plot = True
 best_epoch = 0
 best_correct_pairs = 0
 best_loss = 1000
 
 # Optimizer (SGD)
-lr = 0.05 # 0.1
+lr = 0.01 # 0.05 seems best
 momentum = 0.9
 weight_decay = 1e-4
 

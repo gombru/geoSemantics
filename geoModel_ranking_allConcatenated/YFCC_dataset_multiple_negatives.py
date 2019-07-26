@@ -14,13 +14,14 @@ class YFCC_Dataset(Dataset):
         self.root_dir = root_dir
         self.split = split
         self.img_backbone_model = img_backbone_model
-        self.margin = 1
         self.num_negatives = 6  # Number of negatives per anchor
 
         if 'train' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/train_filtered.txt'
+            # self.num_elements = 10240
         elif 'val' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/val.txt'
+            # self.num_elements = 1024
         else:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/test.txt'
 
@@ -38,7 +39,7 @@ class YFCC_Dataset(Dataset):
         # Count number of elements
         print("Opening dataset ...")
         self.num_elements = sum(1 for line in open(self.root_dir + '/splits/' + split))
-        # self.num_elements = 102400
+        # self.num_elements = 10480
         print("Number of elements in " + split + ": " + str(self.num_elements))
 
         # Initialize containers
@@ -97,9 +98,20 @@ class YFCC_Dataset(Dataset):
 
         # TODO::: HARDCODED
         element_picker = random.randint(0, 1)
+        # element_picker = 0
 
         if element_picker == 0:  # Change image
-            negative_img_idx = random.randint(0, self.num_elements - 1)
+
+            # if 'val' in self.split and idx == 1:
+            #     print("This val sample should be equal")
+
+
+            # if 'train' in self.split:
+            while True:
+                negative_img_idx = random.randint(0, self.num_elements - 1)
+                if negative_img_idx != idx:
+                    break
+                negative_img_idx = random.randint(0, self.num_elements - 1)
             try:
                 img_n = self.img_embeddings[self.img_ids[negative_img_idx]]
             except:
@@ -108,11 +120,14 @@ class YFCC_Dataset(Dataset):
                 img_n = np.zeros(300, dtype=np.float32)
 
         elif element_picker == 1:  # Change tag
+            # if 'train' in self.split:
             while True:  # Check that image does not have the randlomly selected tag
                 cur_tag_neg = random.choice(self.tags_list)
                 if cur_tag_neg not in self.tags[idx]:
                     break
             tag_n = self.__getwordembedding__(cur_tag_neg)
+            # else:
+            #     tag_n = self.__getwordembedding__(self.tags_list[1])
 
         else:  # Change location
             negative_location_idx = random.randint(0, self.num_elements - 1)
@@ -127,8 +142,8 @@ class YFCC_Dataset(Dataset):
         # But we initialize all with anchor info
         images = np.zeros((self.num_negatives + 1, 300), dtype=np.float32)
         tags = np.zeros((self.num_negatives + 1, 300), dtype=np.float32)
-        latitudes = np.zeros((self.num_negatives + 1, 300), dtype=np.float32)
-        longitudes = np.zeros((self.num_negatives + 1, 300), dtype=np.float32)
+        latitudes = np.zeros((self.num_negatives + 1, 1), dtype=np.float32)
+        longitudes = np.zeros((self.num_negatives + 1, 1), dtype=np.float32)
 
         try:
             images[:,:] = self.img_embeddings[self.img_ids[idx]]
@@ -138,8 +153,8 @@ class YFCC_Dataset(Dataset):
 
         # Select a random positive tag
         tag_p = random.choice(self.tags[idx])
-
         tags[:] = self.__getwordembedding__(tag_p)
+
         latitudes[:] = self.latitudes[idx]
         longitudes[:] = self.longitudes[idx]
 
@@ -147,7 +162,18 @@ class YFCC_Dataset(Dataset):
         #### Negatives selection
         ### Multiple Random negative selection
         for n_i in range(1,self.num_negatives+1):
-            images[n_i,:], tags[n_i,:], latitudes[n_i], laongitudes[n_i] = self.__get_random_negative_triplet__(idx, images[0,:], tags[0,:], latitudes[0], longitudes[0])
+            images[n_i,:], tags[n_i,:], latitudes[n_i], longitudes[n_i] = self.__get_random_negative_triplet__(idx, images[0,:], tags[0,:], latitudes[0], longitudes[0])
+
+        # if 'val' in self.split and idx == 1:
+        #     print("img")
+        #     print(images[0,0:5])
+        #     print(images[1,0:5])
+
+        #     print("tags")
+        #     print(tags[0,0:5])
+        #     print(tags[1,0:5])
+
+
 
         # Build tensors
         images = torch.from_numpy(images)

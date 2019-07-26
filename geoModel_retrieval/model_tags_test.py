@@ -24,7 +24,7 @@ class MMNet(nn.Module):
         self.fc_mm_1 = BasicFC_BN(310, 1024)
         self.fc_mm_2 = BasicFC_BN(1024, 1024)
         self.fc_mm_3 = BasicFC_BN(1024, 1024)
-        self.fc_mm_4_n = nn.Linear(1024, 300)
+        self.fc_mm_4 = nn.Linear(1024, 300)
 
     def forward(self, tag, lat, lon):
 
@@ -37,7 +37,7 @@ class MMNet(nn.Module):
         anchor = self.fc_mm_1(anchor)
         anchor = self.fc_mm_2(anchor)
         anchor = self.fc_mm_3(anchor)
-        anchor = self.fc_mm_4_n(anchor)
+        anchor = self.fc_mm_4(anchor)
 
         return anchor
 

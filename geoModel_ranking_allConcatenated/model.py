@@ -9,7 +9,7 @@ class Model(nn.Module):
         super(Model, self).__init__()
         self.c={}
         self.c['margin'] = margin
-        self.extra_net = MMNet_3()
+        self.extra_net = MMNet_2()
         self.initialize_weights()
 
     def forward(self, img_p, tag_p, lat_p, lon_p, img_n, tag_n, lat_n, lon_n):
@@ -46,7 +46,7 @@ class Model(nn.Module):
 class Model_Multiple_Negatives(nn.Module):
 
     def __init__(self):
-        super(Model, self).__init__()
+        super(Model_Multiple_Negatives, self).__init__()
         self.extra_net = MMNet()
         self.initialize_weights()
 
@@ -77,7 +77,7 @@ class Model_Test_Retrieval(nn.Module):
 
     def __init__(self):
         super(Model_Test_Retrieval, self).__init__()
-        self.extra_net = MMNet_3()
+        self.extra_net = MMNet()
 
     def forward(self, img, tag, lat, lon):
         # Here tag is [100kx300]
@@ -96,7 +96,7 @@ class Model_Test_Tagging(nn.Module):
 
     def __init__(self):
         super(Model_Test_Tagging, self).__init__()
-        self.extra_net = MMNet_3()
+        self.extra_net = MMNet()
 
     def forward(self, img, tag, lat, lon):
         # Here tag is [100kx300]
@@ -116,14 +116,15 @@ class MMNet(nn.Module):
     def __init__(self):
         super(MMNet, self).__init__()
 
-        self.fc_i = BasicFC_BN(300,300)
-        self.fc_t = BasicFC_BN(300,300)
-        self.fc_loc = BasicFC_BN(2,10)
+        self.fc_i = BasicFC(300,300)
+        self.fc_t = BasicFC(300,300)
+        self.fc_loc = BasicFC(2,10)
 
-        self.fc1 = BasicFC(610, 512)
-        self.fc2 = BasicFC(512, 512)
-        self.fc3 = BasicFC(512, 512)
-        self.fc4 = nn.Linear(512, 1)
+        self.fc1 = BasicFC(610, 2048)
+        self.fc2 = BasicFC(2048, 2048)
+        self.fc3 = BasicFC(2048, 1024)
+        self.fc4 = BasicFC(1024, 512)
+        self.fc5 = nn.Linear(512, 1)
 
 
     def forward(self, img, tag, lat, lon):
@@ -143,6 +144,7 @@ class MMNet(nn.Module):
         x = self.fc2(x)
         x = self.fc3(x)
         x = self.fc4(x)
+        x = self.fc5(x)
 
         return x
 
@@ -151,58 +153,18 @@ class MMNet_2(nn.Module):
     def __init__(self):
         super(MMNet_2, self).__init__()
 
-        self.fc_i = BasicFC_BN(300,300)
-        self.fc_t = BasicFC_BN(300,300)
-        self.fc_loc = BasicFC_BN(2,10)
-
-        self.fc1 = BasicFC(610, 512)
-        self.fc2 = BasicFC(512, 512)
-        self.fc3 = BasicFC(512, 512)
-        self.fc4 = BasicFC(512, 1024)
-        self.fc5 = BasicFC(1024, 1024)
-        self.fc6 = BasicFC(1024, 512)
-        self.fc7 = nn.Linear(512, 1)
-
-
-    def forward(self, img, tag, lat, lon):
-
-        # A layer with BN for each modality
-        img = self.fc_i(img)
-        tag = self.fc_t(tag)
-        loc = torch.cat((lat, lon), dim=1)
-        loc = self.fc_loc(loc)
-
-        # Concatenate
-        x = torch.cat((img, tag), dim=1)
-        x = torch.cat((loc, x), dim=1)
-
-        # MLP
-        x = self.fc1(x)
-        x = self.fc2(x)
-        x = self.fc3(x)
-        x = self.fc4(x)
-        x = self.fc5(x)
-        x = self.fc6(x)
-        x = self.fc7(x)
-
-        return x
-
-class MMNet_3(nn.Module):
-
-    def __init__(self):
-        super(MMNet_3, self).__init__()
-
-        self.fc_i = BasicFC_BN(300,300)
-        self.fc_t = BasicFC_BN(300,300)
-        self.fc_loc = BasicFC_BN(2,10)
+        self.fc_i = BasicFC(300,300)
+        self.fc_t = BasicFC(300,300)
+        self.fc_loc = BasicFC(2,10)
 
         self.fc1 = BasicFC(610, 2048)
         self.fc2 = BasicFC(2048, 2048)
-        self.fc3 = BasicFC(2048, 1024)
-        self.fc4 = BasicFC(1024, 1024)
-        self.fc5 = BasicFC(1024, 512)
-        self.fc6 = BasicFC(512, 512)
-        self.fc7 = nn.Linear(512, 1)
+        self.fc3_n = BasicFC(2048, 2048)
+        self.fc4_n = BasicFC(2048, 1024)
+        self.fc5_n = BasicFC(1024, 1024)
+        self.fc6_n = BasicFC(1024, 1024)
+        self.fc7_n = BasicFC(1024, 512)
+        self.fc8_n = nn.Linear(512, 1)
 
 
     def forward(self, img, tag, lat, lon):
@@ -220,24 +182,23 @@ class MMNet_3(nn.Module):
         # MLP
         x = self.fc1(x)
         x = self.fc2(x)
-        x = self.fc3(x)
-        x = self.fc4(x)
-        x = self.fc5(x)
-        x = self.fc6(x)
-        x = self.fc7(x)
-
+        x = self.fc3_n(x)
+        x = self.fc4_n(x)
+        x = self.fc5_n(x)
+        x = self.fc6_n(x)
+        x = self.fc7_n(x)
+        x = self.fc8_n(x)
         return x
+
 
 class BasicFC(nn.Module):
 
     def __init__(self, in_channels, out_channels, **kwargs):
         super(BasicFC, self).__init__()
         self.fc = nn.Linear(in_channels, out_channels)
-        # self.bn = nn.BatchNorm1d(out_channels, eps=0.001) # momentum = 0.0001
 
     def forward(self, x):
         x = self.fc(x)
-        # x = self.bn(x)
         return F.relu(x, inplace=True)
 
 class BasicFC_BN(nn.Module):

@@ -13,25 +13,25 @@ import os
 import json
 import numpy as np
 
-dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'YFCC_NCSL_3rdtraining_epoch_3_ValLoss_0.37'
+dataset = '../../../datasets/YFCC100M/'
+model_name = 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1_NotNorm_3rdTraining_lr0_01_epoch_34_ValLoss_0.36'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 img_embeddings_path = dataset + 'results/' + model_name + '/images_embeddings_test.json'
-# tags_embeddings_path = dataset + 'results/' + model_name + '/tags_embeddings.json'
+tags_embeddings_path = dataset + 'results/' + model_name + '/tags_embeddings.json'
 # If using GloVe embeddings directly
-print("Using GloVe embeddings")
-tags_embeddings_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
+# print("Using GloVe embeddings")
+# tags_embeddings_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
 embedding_dim = 300
 precision_k = 10  # Compute precision at k
 save_img = False  # Save some random image retrieval results
 
-measure = 'distance' # 'distance', 'cosineSim', 'dotP'
+measure =  'distance' # 'distance'
 
-distance_norm = 1 # 2
+distance_norm = 2 # 2
 if measure == 'distance':
     print("Using pairwise distance with norm: " + str(distance_norm))
 
-normalize = True # Normalize img embeddings and tag embeddings using L2 norm
+normalize = False # Normalize img embeddings and tag embeddings using L2 norm
 print("Normalize tags and img embeddings: " + str(normalize))
 
 print("Reading tags embeddings ...")
@@ -41,13 +41,8 @@ img_embeddings = json.load(open(img_embeddings_path))
 print("Reading tags of testing images ...")
 test_images_tags = aux.read_tags(test_split_path)
 
-out_freq_file = dataset + '/precisions_by_freqs/' + model_name + '.json'
-precisions_by_freqs = {}
-
-
 if normalize:
     print("Using L2 normalization on img AND tag embeddings")
-
 
 print("Get tags with at least k appearances in test images")
 tags_test_histogram = {}
@@ -83,8 +78,6 @@ del img_embeddings
 
 print("Starting per-tag evaluation")
 dist = nn.PairwiseDistance(p=distance_norm)
-cosSim = nn.CosineSimilarity(dim=1, eps=1e-6)
-
 total_precision = 0.0
 for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()):
     if i % 100 == 0 and i > 0:
@@ -96,20 +89,19 @@ for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()
 
     tag_embedding_tensor = torch.from_numpy(tag_np_embedding).cuda()
 
+    # distances = dist(img_embeddings_tensor, tag_embedding_tensor)
+    # distances = np.array(distances.cpu())
+    # # Sort images by distance to tag
+    # indices_sorted = np.argsort(distances)[0:precision_k]
+
     if measure == 'distance':
         distances = dist(img_embeddings_tensor, tag_embedding_tensor)
         indices_sorted = np.array(distances.sort(descending=False)[1][0:precision_k].cpu())
-
-    elif measure == 'cosineSim':
-        similarities = cosSim(img_embeddings_tensor, tag_embedding_tensor)
-        indices_sorted = np.array(distances.sort(descending=True)[1][0:precision_k].cpu())
-
 
     # Need to apply softmax though images scores for each tag!
     # elif measure == 'dotP':
     #     products = img_embeddings_tensor.mm(tag_embedding_tensor.reshape(1,-1).t()).view(-1)
     #     indices_sorted = np.array(products.sort(descending=True)[1][0:precision_k].cpu())
-
     else:
         print("Measure not found: " + str(measure))
         break
@@ -135,12 +127,6 @@ for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()
             copyfile('../../../datasets/YFCC100M/test_img/' + img_ids[idx] + '.jpg',
                      dataset + '/retrieval_results/' + model_name + '/' + tag + '/' + img_ids[idx] + '.jpg')
 
-    precisions_by_freqs[tag] = {}
-    precisions_by_freqs[tag]['test_appearances'] = test_appearances
-    precisions_by_freqs[tag]['precision'] = precision_tag
-
 total_precision /= len(tags_test_histogram_filtered)
 
 print("Precision at " + str(precision_k) + ": " + str(total_precision*100))
-
-json.dump(precisions_by_freqs, open(out_freq_file,'w'))

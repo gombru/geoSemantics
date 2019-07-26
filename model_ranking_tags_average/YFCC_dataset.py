@@ -9,7 +9,6 @@ import random
 
 
 class YFCC_Dataset(Dataset):
-
     def __init__(self, root_dir, split, random_crop, mirror):
 
         self.split = split
@@ -17,9 +16,11 @@ class YFCC_Dataset(Dataset):
         self.mirror = mirror
 
         if 'train' in self.split:
-            self.root_dir = root_dir.replace('/hd/datasets/','/ssd2/') + 'train_img/'
+            self.root_dir = root_dir.replace('/hd/datasets/', '/ssd2/') + 'train_img/'
+            # self.num_elements = 2000
         else:
-            self.root_dir = root_dir.replace('/hd/datasets/', '/datasets/')  + 'val_img/'
+            self.root_dir = root_dir.replace('/hd/datasets/', '/datasets/') + 'val_img/'
+            # self.num_elements = 100
 
         # Load GenSim Word2Vec model
         print("Loading textual model ...")
@@ -32,7 +33,7 @@ class YFCC_Dataset(Dataset):
         # Count number of elements
         print("Opening dataset ...")
         self.num_elements = sum(1 for line in open('../../../datasets/YFCC100M/splits/' + split))
-        # self.num_elements = 1000
+
         print("Number of elements in " + split + ": " + str(self.num_elements))
 
         # Initialize containers
@@ -41,16 +42,15 @@ class YFCC_Dataset(Dataset):
 
         # Read data
         print("Reading data ...")
-        for i,line in enumerate(open('../../../datasets/YFCC100M/splits/' + split)):
+        for i, line in enumerate(open('../../../datasets/YFCC100M/splits/' + split)):
             if i % 100000 == 0 and i != 0: print(i)
-            # if i == 1000: break
+            if i == self.num_elements: break
             data = line.split(';')
             self.img_ids[i] = int(data[0])
             tags_array = data[1].split(',')
             self.tags.append(tags_array)
 
-        print("Data read. Set size: " + str(len(self.tags)) )
-
+        print("Data read. Set size: " + str(len(self.tags)))
 
     def __len__(self):
         return len(self.img_ids)
@@ -59,7 +59,6 @@ class YFCC_Dataset(Dataset):
         tag = tag.lower()
         tag_embedding = np.asarray(self.text_model[tag], dtype=np.float32)
         return tag_embedding
-
 
     def __getitem__(self, idx):
         img_name = '{}{}{}'.format(self.root_dir, self.img_ids[idx], '.jpg')
@@ -75,7 +74,7 @@ class YFCC_Dataset(Dataset):
 
         try:
             if self.random_crop != 0:
-                image = image_processing.RandomCrop(image,self.random_crop)
+                image = image_processing.RandomCrop(image, self.random_crop)
             if self.mirror:
                 image = image_processing.Mirror(image)
             im_np = np.array(image, dtype=np.float32)
@@ -87,7 +86,7 @@ class YFCC_Dataset(Dataset):
             print("Using hardcoded: " + new_img_name)
             image = Image.open(new_img_name)
             if self.random_crop != 0:
-                image = image_processing.RandomCrop(image,self.random_crop)
+                image = image_processing.RandomCrop(image, self.random_crop)
             im_np = np.array(image, dtype=np.float32)
             im_np = image_processing.PreprocessImage(im_np)
 
@@ -96,7 +95,11 @@ class YFCC_Dataset(Dataset):
         for tag in self.tags[idx]:
             positive_tags_embedding_average += self.__getwordembedding__(tag)
         positive_tags_embedding_average /= len(self.tags[idx])
+        # positive_tags_embedding_average = positive_tags_embedding_average / np.linalg.norm(positive_tags_embedding_average, 2)
 
+        # ----  NEGATIVES SELECTION ----
+
+        # --> RANDOM NEGATIVE
         # Get random image that does not share any tag with the anchor and get its tags average
         searching = True
         while searching:
@@ -106,12 +109,42 @@ class YFCC_Dataset(Dataset):
                 if cur_tag_neg in self.tags[idx]:
                     searching = True
                     break
-
         # Compute sum of embedding of negative image tags
         negative_tags_embedding_average = np.zeros(300, dtype=np.float32)
         for tag in self.tags[negative_img_idx]:
             negative_tags_embedding_average += self.__getwordembedding__(tag)
         negative_tags_embedding_average /= len(self.tags[negative_img_idx])
+
+        # --> SOFT NEGATIVE
+        # Compute the mean euclidian distance of N random negative texts with the positive text embedding.
+        # Select a random text from the ones having more distance than the mean.
+        # used_negatives = 10
+        # mean_dist = 0.0
+        # negative_indices = []
+        # negative_tags_averages = {}
+        # negative_distances = {}
+        # for i in range(0,used_negatives):
+        #     negative_img_idx = random.randint(0, self.num_elements - 1)
+        #     negative_indices.append(negative_img_idx)
+        #     negative_tags_embedding_average = np.zeros(300, dtype=np.float32)
+        #     for tag in self.tags[negative_img_idx]:
+        #         negative_tags_embedding_average += self.__getwordembedding__(tag)
+        #     negative_tags_embedding_average /= len(self.tags[negative_img_idx])
+        #     # negative_tags_embedding_average = negative_tags_embedding_average / np.linalg.norm(negative_tags_embedding_average, 2)
+        #     negative_tags_averages[negative_img_idx] = negative_tags_embedding_average
+        #     dist = np.linalg.norm(positive_tags_embedding_average - negative_tags_embedding_average)
+        #     negative_distances[negative_img_idx] = dist
+        #     mean_dist += dist
+        # mean_dist /= used_negatives
+        # # Select negatives with a distance above the mean
+        # selected_negative_indices = []
+        # for neg_idx in negative_indices:
+        #     if negative_distances[neg_idx] > mean_dist:
+        #         selected_negative_indices.append(neg_idx)
+
+        # selected_negative_idx = random.choice(selected_negative_indices)
+        # negative_tags_embedding_average = negative_tags_averages[selected_negative_idx]
+
 
         # Build tensors
         img_tensor = torch.from_numpy(np.copy(im_np))

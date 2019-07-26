@@ -39,11 +39,11 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
         # compute scores for positive groups
         s_p = model(img[:,0,:], tag[:,0,:], lat[:,0,:], lon[:,0,:])
 
-        y = torch.ones(img_p_var.size()[0]).cuda(gpu, async=True)
+        y = torch.ones(img.size()[0]).cuda(gpu, async=True)
         # If `y == 1` then it assumed the first input should be ranked higher (have a larger value) than the second input, and vice-versa for `y == -1`.
         correct = torch.zeros([1], dtype=torch.int32).cuda()
 
-        for n_i in range(1,num_neg+1):
+        for n_i in range(1,num_neg):
             s_n = model(img[:, n_i, :], tag[:, n_i, :], lat[:, n_i, :], lon[:, n_i, :])
             if n_i == 1:
                 loss = criterion(s_p, s_n, y)
@@ -53,6 +53,8 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
                         correct[0] += 1
             else:
                 loss += criterion(s_p, s_n, y)
+
+        loss /= (num_neg-1)
 
         # measure and record loss
         loss_meter.update(loss.data.item(), img.size()[0])
@@ -67,16 +69,12 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
         batch_time.update(time.time() - end)
         end = time.time()
 
-        # if  i % 5000 == 0 and i != 0:
-        #     print("Correct pairs avg: " + str(correct_pairs.avg) + " --> Saving model per iter")
-        #     filename = '../../../datasets/YFCC100M/' + '/models/' + 'geoModel_ranking_allConcatenated_randomTriplets' + '_iter_' + str(i) + '_TrainLoss_' + str(round(loss.data.item(), 2))
+        # if  epoch % 200 == 0 and i != 0:
+        #     filename = '../../../datasets/YFCC100M/' + '/models/' + 'geoModel_ranking_allConcatenated_randomTriplets_M2_' + '_epoch_' + str(epoch) + '_TrainLoss_' + str(round(loss.data.item(), 2))
         #     prefix_len = len(str(i) + '_TrainLoss_' + str(round(loss.data.item(), 2)))
         #     save_checkpoint(model, filename, prefix_len)
 
-        # if  correct_pairs.avg > len(img_p)*0.7:
-        #     print("Correct pairs avg: " + str(correct_pairs.avg) + " --> Saving model overfitted")
-        #     filename = '../../../datasets/YFCC100M/' + '/models/' + 'geoModel_ranking_allConcatenated_randomTriplets_overfittedToTest'
-        #     save_checkpoint(model, filename, 0)
+
 
 
 
@@ -84,7 +82,7 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
             print('Epoch: [{0}][{1}/{2}]\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                  'Loss {loss.val:.7f} ({loss.avg:.7f})\t'
                   'Correct Pairs {correct_pairs.val:.3f} ({correct_pairs.avg:.3f})\t'
                   .format(
                    epoch, i, len(train_loader), batch_time=batch_time,
@@ -103,7 +101,7 @@ def validate(val_loader, model, criterion, optimizer, epoch, print_freq, plot_da
     loss_meter = AverageMeter()
     correct_pairs = AverageMeter()
 
-    model.eval() # THIS FUCKS VALIDATION!!!
+    model.train() # THIS FUCKS VALIDATION!!!
     end = time.time()
 
     with torch.no_grad():
@@ -122,11 +120,11 @@ def validate(val_loader, model, criterion, optimizer, epoch, print_freq, plot_da
             # compute scores for positive groups
             s_p = model(img[:, 0, :], tag[:, 0, :], lat[:, 0, :], lon[:, 0, :])
 
-            y = torch.ones(img_p_var.size()[0]).cuda(gpu, async=True)
+            y = torch.ones(img.size()[0]).cuda(gpu, async=True)
             # If `y == 1` then it assumed the first input should be ranked higher (have a larger value) than the second input, and vice-versa for `y == -1`.
             correct = torch.zeros([1], dtype=torch.int32).cuda()
 
-            for n_i in range(1, num_neg + 1):
+            for n_i in range(1, num_neg):
                 s_n = model(img[:, n_i, :], tag[:, n_i, :], lat[:, n_i, :], lon[:, n_i, :])
                 if n_i == 1:
                     loss = criterion(s_p, s_n, y)
@@ -137,8 +135,11 @@ def validate(val_loader, model, criterion, optimizer, epoch, print_freq, plot_da
                 else:
                     loss += criterion(s_p, s_n, y)
 
+
+            loss /= (num_neg-1)
+
             # measure and record loss
-            loss_meter.update(loss.data.item(), img_p_var.size()[0])
+            loss_meter.update(loss.data.item(), img.size()[0])
             correct_pairs.update(torch.sum(correct))
 
             # measure elapsed time
@@ -150,7 +151,7 @@ def validate(val_loader, model, criterion, optimizer, epoch, print_freq, plot_da
                 print('Validation: [{0}][{1}/{2}]\t'
                       'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                       'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                      'Loss {loss.val:.7f} ({loss.avg:.7f})\t'
                       'Correct Pairs {correct_pairs.val:.3f} ({correct_pairs.avg:.3f})\t'
                       .format(
                        epoch, i, len(val_loader), batch_time=batch_time,

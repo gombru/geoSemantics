@@ -14,7 +14,7 @@ import json
 import numpy as np
 
 dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'YFCC_MCLL_2ndtraining_epoch_5_ValLoss_6.55'
+model_name = 'YFCC_MLC_fromIN_miniTrain_frozen_epoch_1_ValLoss_0.07'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 top_img_per_tag_path = dataset + 'results/' + model_name + '/tags_top_img.json'
 
@@ -23,8 +23,6 @@ precisions_by_freqs = {}
 
 precision_k = 10  # Compute precision at k
 save_img = False  # Save some random image retrieval results
-
-normalize = False # Normalize img embeddings and tag embeddings using L2 norm
 
 print("Loading tag list ...")
 tags_file = '../../../datasets/YFCC100M/vocab/vocab_words_100k.txt'
@@ -97,5 +95,6 @@ for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()
 total_precision /= len(tags_test_histogram_filtered)
 
 print("Precision at " + str(precision_k) + ": " + str(total_precision*100))
+print(model_name)
 
 json.dump(precisions_by_freqs, open(out_freq_file,'w'))

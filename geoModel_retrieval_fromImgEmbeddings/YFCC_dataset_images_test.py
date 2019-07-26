@@ -38,7 +38,7 @@ class YFCC_Dataset(Dataset):
             img_id = int(d[0])
             self.img_ids.append(img_id)
             img_em = np.asarray(d[1:], dtype=np.float32)
-            img_em = img_em / np.linalg.norm(img_em, 2)
+            # img_em = img_em / np.linalg.norm(img_em, 2)
             self.img_embeddings[img_id] = img_em
         print("Img embeddings loaded: " + str(img_em_c))
 

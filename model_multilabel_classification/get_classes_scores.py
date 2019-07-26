@@ -16,11 +16,11 @@ batch_size = 600
 workers = 6
 ImgSize = 224
 
-model_name = 'YFCC_ImageNet_MLC_epoch_0_ValLoss_0.07.pth'
+model_name = 'YFCC_MLC_epoch_0_ValLoss_0.02'
 model_name = model_name.strip('.pth')
 
-gpus = [0]
-gpu = 0
+gpus = [1]
+gpu = 1
 
 if not os.path.exists(dataset_folder + 'results/' + model_name):
     os.makedirs(dataset_folder + 'results/' + model_name)
@@ -28,11 +28,12 @@ if not os.path.exists(dataset_folder + 'results/' + model_name):
 output_file_path = dataset_folder + 'results/' + model_name + '/images_test.json'
 output_file = open(output_file_path, "w")
 
+
 state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.tar',
-                        map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
+                        map_location={'cuda:0':'cuda:1', 'cuda:2':'cuda:1', 'cuda:3':'cuda:1'})
 
 
-model_test = model.Model()
+model_test = model.Model_Test()
 model_test = torch.nn.DataParallel(model_test, device_ids=gpus).cuda(gpu)
 model_test.load_state_dict(state_dict, strict=False)
 
@@ -52,6 +53,7 @@ with torch.no_grad():
             results[str(img_id[idx])] = {}
             results[str(img_id[idx])]['tags_indices'] = np.array(class_indices.cpu()).tolist()
             results[str(img_id[idx])]['tags_scores'] = np.array(values.cpu()).tolist()
+        if i == 5: break
         print(str(i) + ' / ' + str(len(test_loader)))
 
 print("Writing results")

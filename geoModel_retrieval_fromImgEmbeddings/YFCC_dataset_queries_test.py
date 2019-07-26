@@ -19,10 +19,12 @@ class YFCC_Dataset(Dataset):
         text_model_path = '../../../datasets/YFCC100M/' + '/vocab/vocab_100k.json'
         self.text_model = json.load(open(text_model_path))
         print("Vocabulary size: " + str(len(self.text_model)))
-        print("Normalizing vocab")
-        for k, v in self.text_model.items():
-            v = np.asarray(v, dtype=np.float32)
-            self.text_model[k] = v / np.linalg.norm(v, 2)
+
+        # print("Normalizing vocab")
+        # for k, v in self.text_model.items():
+        #     v = np.asarray(v, dtype=np.float32)
+        #     self.text_model[k] = v / np.linalg.norm(v, 2)
+
         self.tags_list = list(self.text_model.keys())
 
         print("Loading tag|loc queries ...")
@@ -31,11 +33,18 @@ class YFCC_Dataset(Dataset):
         self.query_lats = []
         self.query_lons = []
 
+        self.query_lats_str = []
+        self.query_lons_str = []
+
         for line in open(queries_file, 'r'):
             d = line.split(',')
             self.query_tags.append(d[0])
+
             self.query_lats.append((float(d[1]) + 90) / 180)
             self.query_lons.append((float(d[2]) + 180) / 360)
+
+            self.query_lats_str.append(d[1])
+            self.query_lons_str.append(d[2].replace('\n',''))
 
         print("Number of queries: " + str(len(self.query_tags)))
 
@@ -56,5 +65,8 @@ class YFCC_Dataset(Dataset):
         lat = torch.from_numpy(np.array([self.query_lats[idx]], dtype=np.float32))
         lon = torch.from_numpy(np.array([self.query_lons[idx]], dtype=np.float32))
 
+        lat_str = self.query_lats_str[idx]
+        lon_str = self.query_lons_str[idx]
 
-        return tag_str, tag, lat, lon
+
+        return tag_str, tag, lat, lon, lat_str, lon_str

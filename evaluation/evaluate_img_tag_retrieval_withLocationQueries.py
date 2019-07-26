@@ -40,7 +40,7 @@ granularities_str = ['street level (1km)', 'city (25km)', 'region (200km)', 'cou
 
 dataset = '../../../hd/datasets/YFCC100M/'
 queries_file = dataset + 'geosensitive_queries/queries.txt'
-model_name = 'YFCC_NCSL_3rdtraining_epoch_3_ValLoss_0.37'
+model_name = 'YFCC_NCSL_2ndtraining_epoch_16_ValLoss_0.38'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 img_embeddings_path = dataset + 'results/' + model_name + '/images_embeddings_test.json'
 # tags_embeddings_path = dataset + 'results/' + model_name + '/tags_embeddings.json'
@@ -132,7 +132,7 @@ for i, cur_tag in enumerate(query_tags):
     if i % 500 == 0 and i > 0:
         print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*precisions[0]/i))
         print(precisions)
-
+    print(tags_embeddings.keys())
     tag_np_embedding = np.asarray(tags_embeddings[cur_tag], dtype=np.float32)
     if normalize:
         tag_np_embedding /= np.linalg.norm(tag_np_embedding)
