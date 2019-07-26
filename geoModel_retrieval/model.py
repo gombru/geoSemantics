@@ -24,11 +24,12 @@ class Model(nn.Module):
         else:
             print("NOT loading CNN checkpoint")
 
+        print("Freezing CNN")
         ct = 0
         for child in self.cnn.children():
             ct += 1
             if ct < len(list(self.cnn.children())):
-                print("Freezing: " + str(child))
+                # print("Freezing: " + str(child))
                 for param in child.parameters():
                     param.requires_grad = False
             else:

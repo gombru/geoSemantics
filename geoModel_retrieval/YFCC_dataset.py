@@ -20,7 +20,7 @@ class YFCC_Dataset(Dataset):
         self.random_crop = random_crop
         self.mirror = mirror
         self.distance_thresholds = [2500, 750, 200, 25, 1]
-        self.current_threshold = 0
+        self.current_threshold = 1
 
         # Load GenSim Word2Vec model
         print("Loading textual model ...")
@@ -33,24 +33,32 @@ class YFCC_Dataset(Dataset):
         #     v = np.asarray(v, dtype=np.float32)
         #     self.text_model[k] = v / np.linalg.norm(v, 2)
 
+        # Load img ids per tag
+        print("Loading img ids per tag ...")
+        images_per_tag_file = '../../../datasets/YFCC100M/' + '/splits/images_per_tag_file.json'
+        self.images_per_tag = json.load(open(images_per_tag_file))
+
+
         self.tags_list = list(self.text_model.keys())
 
         if 'train' in self.split:
             self.root_dir = root_dir.replace('/hd/datasets/','/ssd2/') + 'train_img/'
-            # self.num_elements = 650*500
+            self.num_elements = 650*20
         else:
             self.root_dir = root_dir.replace('/hd/datasets/', '/datasets/')  + 'val_img/'
-            # self.num_elements = 650*10
+            self.num_elements = 650*1
 
         # Count number of elements
         print("Opening dataset ...")
-        self.num_elements = sum(1 for line in open('../../../datasets/YFCC100M/splits/' + split))
+        # self.num_elements = sum(1 for line in open('../../../datasets/YFCC100M/splits/' + split))
 
         # Initialize containers
         self.img_ids = np.zeros(self.num_elements, dtype=np.uint64)
         self.tags = []
         self.latitudes = np.zeros(self.num_elements, dtype=np.float32)
         self.longitudes = np.zeros(self.num_elements, dtype=np.float32)
+        self.latitudes_or = np.zeros(self.num_elements, dtype=np.float32)
+        self.longitudes_or = np.zeros(self.num_elements, dtype=np.float32)
         self.img_embeddings = {}
 
         # Read data
@@ -63,11 +71,11 @@ class YFCC_Dataset(Dataset):
             tags_array = data[1].split(',')
             self.tags.append(tags_array)
 
-            self.latitudes[i] = float(data[4])
-            self.longitudes[i] = float(data[5])
+            self.latitudes_or[i] = float(data[4])
+            self.longitudes_or[i] = float(data[5])
             # Coordinates normalization
-            self.latitudes[i] = (self.latitudes[i] + 90) / 180
-            self.longitudes[i] = (self.longitudes[i] + 180) / 360
+            self.latitudes[i] = (self.latitudes_or[i] + 90) / 180
+            self.longitudes[i] = (self.longitudes_or[i] + 180) / 360
 
         print("Data read. Set size: " + str(len(self.tags)))
 
@@ -94,9 +102,16 @@ class YFCC_Dataset(Dataset):
             print("Error computing distance with gropy. Values:")
             print(coords_1)
             print(coords_2)
-            distance_km = 100000
+            distance_km = 0
 
         return distance_km
+
+    def __getItemNotSharingTag__(self, idx, tag_str):
+        while True:
+            img_n_index = random.randint(0, self.num_elements - 1)
+            if img_n_index != idx and tag_str not in self.tags[img_n_index]:
+                break
+        return img_n_index
 
 
     def __getitem__(self, idx):
@@ -136,31 +151,27 @@ class YFCC_Dataset(Dataset):
 
         #### Negatives selection
 
-        ### Random negative imagen (not sharing the selected tag)
-        # while True:
-        #     img_n_index = random.randint(0, self.num_elements - 1)
-        #     if img_n_index != idx and tag_str not in self.tags[img_n_index]:
-        #         break
-
-        ### Random negative image. USE THIS when using location!!
         negative_type = random.randint(0,1)
 
         if negative_type == 0: # Select a random negative
-
-            while True:
-                img_n_index = random.randint(0, self.num_elements - 1)
-                if img_n_index != idx and tag_str not in self.tags[img_n_index]:
-                    break
+            img_n_index = self.__getItemNotSharingTag__(idx, tag_str)
 
         else: # Select an image with the same tag but another location (more distant than a threshold)
-
+            dist_checked = 0
             while True:
-                img_n_index = random.randint(0, self.num_elements - 1)
-                # Check that image shares the tag and it's not the same
-                if tag_str in self.tags[img_n_index] and img_n_index != idx:
+                img_with_cur_tag = self.images_per_tag[tag_str]
+                num_img_with_cur_tag = len(img_with_cur_tag)
+                img_n_index = random.choice(img_with_cur_tag)
+                # Check that image it's not the same
+                if img_n_index != idx:
                     # Check that the distance is above distance threshold
-                    locations_distance = self.__getdistance__(self.latitudes[idx], self.longitudes[idx], self.latitudes[img_n_index], self.longitudes[img_n_index])
+                    dist_checked+=1
+                    locations_distance = self.__getdistance__(self.latitudes_or[idx], self.longitudes_or[idx], self.latitudes_or[img_n_index], self.longitudes_or[img_n_index])
                     if locations_distance > self.distance_thresholds[self.current_threshold]:
+                        break
+
+                if dist_checked == 500 or dist_checked >= num_img_with_cur_tag:
+                        img_n_index = self.__getItemNotSharingTag__(idx, tag_str)
                         break
 
 

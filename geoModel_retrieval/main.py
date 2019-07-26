@@ -20,12 +20,12 @@ if CNN_checkpoint:
 margin = 1
 norm_degree = 2
 
-gpus = [3,2,1,0]
+gpus = [3]
 gpu = 3
-workers = 8 # 8 Num of data loading workers
+workers = 0 # 8 Num of data loading workers
 epochs = 10000
 start_epoch = 0 # Useful on restarts
-batch_size = 650 # Batch size
+batch_size = 650 # 650 Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
 resume = dataset + 'models/saved/' + 'geoModel_retrieval_CNN_NCSL_frozen_randomTriplets_noLoc_M1_iter_15000_TrainLoss_0.36.pth.tar'  # Path to checkpoint top resume training
 plot = True
