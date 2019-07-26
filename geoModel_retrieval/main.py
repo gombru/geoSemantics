@@ -8,7 +8,7 @@ import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Config
-training_id = 'geoModel_retrieval_CNN_NCSL_frozen_randomTriplets_noLoc_M1'
+training_id = 'geoModel_retrieval_CNN_NCSL_frozen_randomTriplets_noLoc_M1_NotNorm'
 dataset = '../../../hd/datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
 split_val = 'val.txt'
@@ -21,12 +21,12 @@ norm_degree = 2
 
 gpus = [2]
 gpu = 2
-workers = 5 # 8 Num of data loading workers
+workers = 4 # 8 Num of data loading workers
 epochs = 10000
 start_epoch = 0 # Useful on restarts
 batch_size = 650 # 600 # 1024 # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
-resume = None # dataset + 'models/saved/' + 'geoModel_ranking_allConcatenated_randomTriplets_M2_100k_epoch_1.pth.tar'  # Path to checkpoint top resume training
+resume = dataset + 'models/saved/' + 'geoModel_retrieval_CNN_NCSL_frozen_randomTriplets_noLoc_M1_NotNorm_smallTrain_epoch_4_ValLoss_0.37.pth.tar'  # Path to checkpoint top resume training
 plot = True
 best_epoch = 0
 best_correct_pairs = 0
@@ -34,7 +34,7 @@ best_loss = 1000
 ImgSize = 224
 
 # Optimizer (SGD)
-lr = 0.2 # 0.1
+lr = 0.03 # 0.15 later 0.05
 momentum = 0.9
 weight_decay = 1e-4
 

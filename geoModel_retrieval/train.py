@@ -63,6 +63,11 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
                    epoch, i, len(train_loader), batch_time=batch_time,
                    data_time=data_time, loss=loss_meter, correct_triplets=correct_triplets))
 
+        if  i % 5000 == 0 and i != 0:
+            filename = '../../../hd/datasets/YFCC100M/' + '/models/' + 'geoModel_retrieval_CNN_NCSL_frozen_randomTriplets_noLoc_M1' + '_iter_' + str(i) + '_TrainLoss_' + str(round(loss.data.item(), 2))
+            prefix_len = len(str(i) + '_TrainLoss_' + str(round(loss.data.item(), 2)))
+            save_checkpoint(model, filename, prefix_len)
+
     plot_data['train_loss'][plot_data['epoch']] = loss_meter.avg
     plot_data['train_correct_triplets'][plot_data['epoch']] = correct_triplets.avg
 

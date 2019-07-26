@@ -23,22 +23,24 @@ class YFCC_Dataset(Dataset):
         text_model_path = '../../../datasets/YFCC100M/' + '/vocab/vocab_100k.json'
         self.text_model = json.load(open(text_model_path))
         print("Vocabulary size: " + str(len(self.text_model)))
-        print("Normalizing vocab")
-        for k, v in self.text_model.items():
-            v = np.asarray(v, dtype=np.float32)
-            self.text_model[k] = v / np.linalg.norm(v, 2)
+
+        # print("Normalizing vocab")
+        # for k, v in self.text_model.items():
+        #     v = np.asarray(v, dtype=np.float32)
+        #     self.text_model[k] = v / np.linalg.norm(v, 2)
+
         self.tags_list = list(self.text_model.keys())
 
         if 'train' in self.split:
             self.root_dir = root_dir.replace('/hd/datasets/','/ssd2/') + 'train_img/'
-            self.num_elements = 650*25
+            # self.num_elements = 650*500
         else:
             self.root_dir = root_dir.replace('/hd/datasets/', '/datasets/')  + 'val_img/'
-            self.num_elements = 650*2
+            # self.num_elements = 650*10
 
         # Count number of elements
         print("Opening dataset ...")
-        # self.num_elements = sum(1 for line in open(self.root_dir + '/splits/' + split))
+        self.num_elements = sum(1 for line in open('../../../datasets/YFCC100M/splits/' + split))
 
         # Initialize containers
         self.img_ids = np.zeros(self.num_elements, dtype=np.uint64)
