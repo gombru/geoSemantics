@@ -11,14 +11,18 @@ class Model(nn.Module):
         super(Model, self).__init__()
 
         self.cnn = MyResNet.resnet50(pretrained=True, num_classes=300)
-        print("Loading ResNet checkpoint: " + str(CNN_checkpoint))
-        state_dict = torch.load(CNN_checkpoint, map_location={'cuda:0': 'cuda:2', 'cuda:1': 'cuda:2', 'cuda:3': 'cuda:2'})
-        new_state_dict = OrderedDict()
-        for k, v in state_dict.items():
-            name = k[11:] # remove `module.`
-            new_state_dict[name] = v
-        # load params
-        self.cnn.load_state_dict(new_state_dict, strict=True)
+
+        if CNN_checkpoint:
+            print("Loading ResNet checkpoint: " + str(CNN_checkpoint))
+            state_dict = torch.load(CNN_checkpoint, map_location={'cuda:0': 'cuda:2', 'cuda:1': 'cuda:2', 'cuda:3': 'cuda:2'})
+            new_state_dict = OrderedDict()
+            for k, v in state_dict.items():
+                name = k[11:] # remove `module.`
+                new_state_dict[name] = v
+            # load params
+            self.cnn.load_state_dict(new_state_dict, strict=True)
+        else:
+            print("NOT loading CNN checkpoint")
 
         ct = 0
         for child in self.cnn.children():
