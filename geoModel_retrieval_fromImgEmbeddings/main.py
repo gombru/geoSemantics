@@ -8,7 +8,9 @@ import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Configg
-training_id = 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1_NotNorm_3rdTraining_lr0_01'
+training_id = 'geoModel_retrieval_fromEm_NCSLTr2_M1_NotNorm_LocTh750_lr0_05'
+
+
 dataset = '../../../datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
 split_val = 'val.txt'
@@ -32,7 +34,7 @@ best_correct_pairs = 0
 best_loss = 1000
 
 # Optimizer (SGD)
-lr = 0.01 # 0.05 seems best
+lr = 0.05 # 0.05 seems best
 momentum = 0.9
 weight_decay = 1e-4
 
@@ -106,6 +108,11 @@ for epoch in range(start_epoch, epochs):
         filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2))
         prefix_len = len('_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2)))
         train.save_checkpoint(model, filename, prefix_len)
+    else:
+        print("Model didn't improve Val Loss --> Decreasing lr by 10")
+        for g in optimizer.param_groups:
+            g['lr'] = g['lr'] * 0.1
+
 
     if plot:
         ax1.plot(it_axes[0:epoch+1], plot_data['train_loss'][0:epoch+1], 'r')
