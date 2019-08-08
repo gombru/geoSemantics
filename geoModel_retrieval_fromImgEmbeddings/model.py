@@ -7,7 +7,7 @@ import math
 class Model(nn.Module):
     def __init__(self, margin, norm_degree):
         super(Model, self).__init__()
-        self.mm_net = MMNet()
+        self.mm_net = NormLocEmGN()
         self.img_net = ImgNet()
         self.initialize_weights()
         self.c = {}
@@ -66,16 +66,17 @@ class Model(nn.Module):
 
 
 
-class MMNet(nn.Module):
+class NormLocEmGN(nn.Module):
     def __init__(self):
-        super(MMNet, self).__init__()
+        super(NormLocEmGN, self).__init__()
 
         # loc layers
-        self.fc_loc_1 = BasicFC(2, 300)
-        self.fc_loc_2 = BasicFC(300, 300)
+        self.fc_loc_1 = BasicFC(2, 10)
+        self.fc_loc_2 = BasicFC(10, 10)
+        self.fc_loc_3 = BasicFC(10, 10)
 
         # mm tag|loc layers
-        self.fc_mm_1 = BasicFC_GN(600, 1024)
+        self.fc_mm_1 = BasicFC_GN(310, 1024)
         self.fc_mm_2 = BasicFC_GN(1024, 2048)
         self.fc_mm_3 = BasicFC_GN(2048, 2048)
         self.fc_mm_4 = BasicFC_GN(2048, 1024)
@@ -87,6 +88,7 @@ class MMNet(nn.Module):
         loc = torch.cat((lat, lon), dim=1)
         loc = self.fc_loc_1(loc)
         loc = self.fc_loc_2(loc)
+        loc = self.fc_loc_3(loc)
         loc_norm = loc.norm(p=2, dim=1, keepdim=True)
         loc = loc.div(loc_norm)
         loc[loc != loc] = 0  # avoid nans
@@ -101,19 +103,21 @@ class MMNet(nn.Module):
 
         return anchor
 
-
-class ExplicitLoc(nn.Module):
+class NoNormLocEmGN(nn.Module):
     def __init__(self):
-        super(ExplicitLoc, self).__init__()
+        super(NormLocEmGN, self).__init__()
 
         # loc layers
         self.fc_loc_1 = BasicFC(2, 10)
-        self.fc_loc_2 = BasicFC(10, 2)
+        self.fc_loc_2 = BasicFC(10, 10)
+        self.fc_loc_3 = BasicFC(10, 10)
 
         # mm tag|loc layers
-        self.fc_tag_1 = BasicFC_GN(300, 1024)
-        self.fc_tag_2 = BasicFC_GN(1024, 1024)
-        self.fc_tag_3 = nn.Linear(1024, 298)
+        self.fc_mm_1 = BasicFC_GN(310, 1024)
+        self.fc_mm_2 = BasicFC_GN(1024, 2048)
+        self.fc_mm_3 = BasicFC_GN(2048, 2048)
+        self.fc_mm_4 = BasicFC_GN(2048, 1024)
+        self.fc_mm_5 = nn.Linear(1024, 300)
 
     def forward(self, tag, lat, lon):
 
@@ -121,11 +125,46 @@ class ExplicitLoc(nn.Module):
         loc = torch.cat((lat, lon), dim=1)
         loc = self.fc_loc_1(loc)
         loc = self.fc_loc_2(loc)
+        loc = self.fc_loc_3(loc)
+
+        # MM tag|loc
+        anchor = torch.cat((loc, tag), dim=1)
+        anchor = self.fc_mm_1(anchor)
+        anchor = self.fc_mm_2(anchor)
+        anchor = self.fc_mm_3(anchor)
+        anchor = self.fc_mm_4(anchor)
+        anchor = self.fc_mm_5(anchor)
+
+        return anchor
+
+class ExplicitLoc(nn.Module):
+    def __init__(self):
+        super(ExplicitLoc, self).__init__()
+
+        # loc layers
+        self.fc_loc_1 = BasicFC(2, 10)
+        self.fc_loc_2 = BasicFC(10, 10)
+        self.fc_loc_3 = BasicFC(10, 2)
+
+        # mm tag|loc layers
+        self.fc_tag_1 = BasicFC_GN(300, 1024)
+        self.fc_tag_2 = BasicFC_GN(1024, 2048)
+        self.fc_tag_3 = BasicFC_GN(2048, 1024)
+        self.fc_tag_4 = nn.Linear(1024, 298)
+
+    def forward(self, tag, lat, lon):
+
+        # Location
+        loc = torch.cat((lat, lon), dim=1)
+        loc = self.fc_loc_1(loc)
+        loc = self.fc_loc_2(loc)
+        loc = self.fc_loc_3(loc)
 
         # Tag
         tag = self.fc_tag_1(tag)
         tag = self.fc_tag_2(tag)
         tag = self.fc_tag_3(tag)
+        tag = self.fc_tag_4(tag)
 
         # tag|loc
         anchor = torch.cat((loc, tag), dim=1)
@@ -147,7 +186,6 @@ class ImgNet(nn.Module):
         img = self.fc_i_3(img)
         img = self.fc_i_4(img)
         return img
-
 
 
 class BasicFC_BN(nn.Module):

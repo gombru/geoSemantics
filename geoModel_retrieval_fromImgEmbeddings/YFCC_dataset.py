@@ -146,7 +146,7 @@ class YFCC_Dataset(Dataset):
 
         #### Negatives selection
 
-        negative_type = random.randint(0, 1)
+        # negative_type = random.randint(0, 1)
         negative_type = 0
 
         if negative_type == 0:  # Select a random negative

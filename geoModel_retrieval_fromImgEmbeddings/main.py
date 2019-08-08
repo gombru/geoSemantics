@@ -8,26 +8,26 @@ import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Configg
-training_id = 'geoModel_retrieval_fromEm_NCSLTr2_M2_NotNorm_LocTh750_lr0_01_LocEm_GN_WithLoc_smallTrain_2nd'
+training_id = 'geoModel_retrieval_fromEm_MCLL_NotNorm_WithLoc_SoftTriplets_smallTrain_lr0_02_NormLocEmGN'
 
 
-dataset = '../../../datasets/YFCC100M/'
+dataset = '../../../hd/datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
 split_val = 'val.txt'
 
-img_embeddings_folder = 'YFCC_NCSL_2ndtraining_epoch_16_ValLoss_0.38'
+img_embeddings_folder = 'YFCC_MCLL_2ndtraining_epoch_5_ValLoss_6.55'
 
 margin = 1
 norm_degree = 2
 
 gpus = [0]
 gpu = 0
-workers = 0 # 8 Num of data loading workers
+workers = 0  # 8 Num of data loading workers
 epochs = 100000
 start_epoch = 0 # Useful on restarts
 batch_size = 1024 # 1024 # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
-resume = dataset + 'models/saved/' + 'geoModel_retrieval_fromEm_NCSLTr2_M2_NotNorm_LocTh750_lr0_001_LocEm_GN_WithLoc_smallTrain_epoch_37_ValLoss_0.37.pth.tar'  # Path to checkpoint top resume training
+resume = None # dataset + 'models/saved/' + 'geoModel_retrieval_fromEm_NCSLTr2_M2_NotNorm_LocTh750_lr0_001_LocEm_GN_WithLoc_smallTrain_epoch_37_ValLoss_0.37.pth.tar'  # Path to checkpoint top resume training
 plot = True
 best_epoch = 0
 best_correct_pairs = 0
@@ -37,7 +37,7 @@ train_iters = 2000 # 10000 # 5000
 val_iters = 200 # 500  # 100
 
 # Optimizer (SGD)
-lr = 0.01 # 0.05 # 0.05 seems best # 0.001
+lr = 0.02 # 0.05 # 0.05 seems best # 0.001
 lr_mult = 1
 momentum = 0.9
 weight_decay = 1e-4
