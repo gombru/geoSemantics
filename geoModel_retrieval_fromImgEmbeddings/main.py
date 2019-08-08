@@ -8,7 +8,7 @@ import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Configg
-training_id = 'geoModel_retrieval_fromEm_NCSLTr2_M1_NotNorm_LocTh750_lr0_05'
+training_id = 'geoModel_retrieval_fromEm_NCSLTr2_M2_NotNorm_LocTh750_lr0_01_LocEm_GN_WithLoc_smallTrain_2nd'
 
 
 dataset = '../../../datasets/YFCC100M/'
@@ -23,18 +23,22 @@ norm_degree = 2
 gpus = [0]
 gpu = 0
 workers = 0 # 8 Num of data loading workers
-epochs = 10000
+epochs = 100000
 start_epoch = 0 # Useful on restarts
-batch_size = 1024 # 600 # 1024 # Batch size
+batch_size = 1024 # 1024 # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
-resume = dataset + 'models/saved/' + 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1_NotNorm_epoch_3_ValLoss_0.39.pth.tar'  # Path to checkpoint top resume training
+resume = dataset + 'models/saved/' + 'geoModel_retrieval_fromEm_NCSLTr2_M2_NotNorm_LocTh750_lr0_001_LocEm_GN_WithLoc_smallTrain_epoch_37_ValLoss_0.37.pth.tar'  # Path to checkpoint top resume training
 plot = True
 best_epoch = 0
 best_correct_pairs = 0
 best_loss = 1000
 
+train_iters = 2000 # 10000 # 5000
+val_iters = 200 # 500  # 100
+
 # Optimizer (SGD)
-lr = 0.05 # 0.05 seems best
+lr = 0.01 # 0.05 # 0.05 seems best # 0.001
+lr_mult = 1
 momentum = 0.9
 weight_decay = 1e-4
 
@@ -87,6 +91,7 @@ ax2.set_ylabel('train correct pairs (b), val correct pairs (g)')
 ax2.set_autoscaley_on(False)
 ax1.set_ylim([0, 1.02])
 ax2.set_ylim([0, batch_size + 0.2])
+prev_val_loss = 0
 
 print("Dataset and model ready. Starting training ...")
 
@@ -94,10 +99,11 @@ for epoch in range(start_epoch, epochs):
     plot_data['epoch'] = epoch
 
     # Train for one epoch
-    plot_data = train.train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu)
+    plot_data = train.train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, train_iters)
 
     # Evaluate on validation set
-    plot_data = train.validate(val_loader, model, criterion, epoch, print_freq, plot_data, gpu)
+    print("Validating ... (using train loader) ")
+    plot_data = train.validate(val_loader, model, criterion, epoch, print_freq, plot_data, val_iters)
 
 
     # Remember best model and save checkpoint
@@ -107,12 +113,19 @@ for epoch in range(start_epoch, epochs):
         best_loss = plot_data['val_loss'][epoch]
         filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2))
         prefix_len = len('_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2)))
-        train.save_checkpoint(model, filename, prefix_len)
-    else:
-        print("Model didn't improve Val Loss --> Decreasing lr by 10")
-        for g in optimizer.param_groups:
-            g['lr'] = g['lr'] * 0.1
+        train.save_checkpoint(model, filename)
 
+    elif epoch > 0 and plot_data['val_loss'][epoch] > prev_val_loss:
+        print("Model didn't improve Val Loss --> Multiplying lr by " + str(lr_mult))
+        lr = lr * lr_mult
+        print("Cur lr: " + str(lr))
+        for g in optimizer.param_groups:
+            g['lr'] = g['lr'] * lr_mult
+
+    else:
+        print("Continuing with lr " + str(lr) + "  - Not best model but improved previous epoch - ")
+
+    prev_val_loss = plot_data['val_loss'][epoch]
 
     if plot:
         ax1.plot(it_axes[0:epoch+1], plot_data['train_loss'][0:epoch+1], 'r')
@@ -120,6 +133,8 @@ for epoch in range(start_epoch, epochs):
 
         ax1.plot(it_axes[0:epoch+1], plot_data['val_loss'][0:epoch+1], 'y')
         ax2.plot(it_axes[0:epoch+1], plot_data['val_correct_triplets'][0:epoch+1], 'g')
+
+        ax1.set_xlabel('epoch, lr ' + str(lr))
 
         plt.title(training_id)
         plt.ion()
@@ -136,5 +151,5 @@ for epoch in range(start_epoch, epochs):
 print("Finished Training, saving checkpoint")
 filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch)
 prefix_len = len('_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2)))
-train.save_checkpoint(model, filename, prefix_len)
+train.save_checkpoint(model, filename)
 

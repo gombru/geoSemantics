@@ -7,14 +7,11 @@ import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
 
-def save_checkpoint(model, filename, prefix_len):
+def save_checkpoint(model, filename):
     print("Saving Checkpoint")
-    # for cur_filename in glob.glob(filename[:-prefix_len] + '*'):
-    #     print(cur_filename)
-    #     os.remove(cur_filename)
     torch.save(model.state_dict(), filename + '.pth.tar')
 
-def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu):
+def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, num_iters):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     loss_meter = AverageMeter()
@@ -63,9 +60,10 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
                    epoch, i, len(train_loader), batch_time=batch_time,
                    data_time=data_time, loss=loss_meter, correct_triplets=correct_triplets))
 
-        if i % 5000 == 0 and i != 0:
-            filename = '../../../datasets/YFCC100M/' + '/models/' + 'geoModel_retrieval_fromEm_NCSLTr2_M1_NotNorm_LocTh750_lr0_05' + '_epoch_' + str(epoch) + '_iter_' + str(i) + '_TrainLoss_' + str(round(loss.data.item(), 2))
-            save_checkpoint(model, filename)
+        if i == num_iters-1:
+            plot_data['train_loss'][plot_data['epoch']] = loss_meter.avg
+            plot_data['train_correct_triplets'][plot_data['epoch']] = correct_triplets.avg
+            return plot_data
 
     plot_data['train_loss'][plot_data['epoch']] = loss_meter.avg
     plot_data['train_correct_triplets'][plot_data['epoch']] = correct_triplets.avg
@@ -74,7 +72,7 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
     return plot_data
 
 
-def validate(val_loader, model, criterion, epoch, print_freq, plot_data, gpu):
+def validate(val_loader, model, criterion, epoch, print_freq, plot_data, num_iters):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     loss_meter = AverageMeter()
@@ -118,6 +116,11 @@ def validate(val_loader, model, criterion, epoch, print_freq, plot_data, gpu):
                       .format(
                        epoch, i, len(val_loader), batch_time=batch_time,
                        data_time=data_time, loss=loss_meter, correct_triplets=correct_triplets))
+
+            if i == num_iters-1:
+                plot_data['val_loss'][plot_data['epoch']] = loss_meter.avg
+                plot_data['val_correct_triplets'][plot_data['epoch']] = correct_triplets.avg
+                return plot_data
 
     plot_data['val_loss'][plot_data['epoch']] = loss_meter.avg
     plot_data['val_correct_triplets'][plot_data['epoch']] = correct_triplets.avg

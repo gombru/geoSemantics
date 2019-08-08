@@ -4,7 +4,7 @@ import numpy as np
 from torch.utils.data import Dataset, DataLoader
 import json
 import random
-import model
+import geopy.distance
 import numpy as np
 import math
 
@@ -16,16 +16,16 @@ class YFCC_Dataset(Dataset):
         self.split = split
         self.img_backbone_model = img_backbone_model
         self.distance_thresholds = [2500, 750, 200, 25, 1]
-
+        self.current_threshold = 1
 
         if 'train' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/train_filtered.txt'
             images_per_tag_file = '../../../datasets/YFCC100M/' + 'splits/images_per_tag_train_filtered.json'
-            # self.num_elements = 102400
+            self.num_elements = 1024 * 1000
         elif 'val' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/val.txt'
             images_per_tag_file = '../../../datasets/YFCC100M/' + 'splits/images_per_tag_val.json'
-            # self.num_elements = 2048 * 2
+            self.num_elements = 1024 * 100
         else:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/test.txt'
 
@@ -48,7 +48,7 @@ class YFCC_Dataset(Dataset):
 
         # Count number of elements
         print("Opening dataset ...")
-        self.num_elements = sum(1 for line in open(self.root_dir + '/splits/' + split))
+        # self.num_elements = sum(1 for line in open(self.root_dir + '/splits/' + split))
 
         # Initialize containers
         self.img_ids = np.zeros(self.num_elements, dtype=np.uint64)
@@ -58,6 +58,7 @@ class YFCC_Dataset(Dataset):
         self.latitudes_or = np.zeros(self.num_elements, dtype=np.float32)
         self.longitudes_or = np.zeros(self.num_elements, dtype=np.float32)
         self.img_embeddings = {}
+        self.img_ids2idx_map = {}
 
         # Read data
         print("Reading split data ...")
@@ -146,6 +147,7 @@ class YFCC_Dataset(Dataset):
         #### Negatives selection
 
         negative_type = random.randint(0, 1)
+        negative_type = 0
 
         if negative_type == 0:  # Select a random negative
             img_n_index = self.__getItemNotSharingTag__(idx, tag_str)
@@ -159,16 +161,12 @@ class YFCC_Dataset(Dataset):
 
             dist_checked = 0
 
-            # st = time.time()
             while True:
-                if num_img_with_cur_tag < 2 or dist_checked > num_img_with_cur_tag or dist_checked == 500:
+                if num_img_with_cur_tag < 2 or dist_checked > num_img_with_cur_tag or dist_checked == 100:
                     img_n_index = self.__getItemNotSharingTag__(idx, tag_str)
                     break
-
                 try:
-                    # st2 = time.time()
                     img_n_index = self.img_ids2idx_map[random.choice(img_with_cur_tag)]
-                    # print("time get img_n_index: " +str((time.time() - st2)))
                 except:
                     img_n_index = self.__getItemNotSharingTag__(idx, tag_str)
                     break
@@ -177,14 +175,11 @@ class YFCC_Dataset(Dataset):
                 if img_n_index != idx:
                     # Check that the distance is above distance threshold
                     dist_checked += 1
-                    # st2 = time.time()
                     locations_distance = self.__getdistanceFast__(self.latitudes_or[idx], self.longitudes_or[idx],
                                                                   self.latitudes_or[img_n_index],
                                                                   self.longitudes_or[img_n_index])
-                    # print("time one dist compute: " + str((time.time() - st2)))
                     if locations_distance > self.distance_thresholds[self.current_threshold]:
                         break
-
 
         try:
             img_n = self.img_embeddings[self.img_ids[img_n_index]]

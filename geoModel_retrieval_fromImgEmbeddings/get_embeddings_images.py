@@ -17,7 +17,7 @@ split = 'test.txt'
 batch_size = 1024
 workers = 0
 
-model_name = 'geoModel_retrieval_fromEm_NCSLTr2_randomTriplets_noLoc_M1_NotNorm_3rdTraining_lr0_01_epoch_34_ValLoss_0.36.pth'
+model_name = 'geoModel_retrieval_fromEm_NCSLTr2_M2_NotNorm_LocTh750_lr0_001_LocEm_GN_WithLoc_smallTrain_epoch_37_ValLoss_0.37.pth'
 model_name = model_name.strip('.pth')
 
 gpus = [0]
