@@ -18,16 +18,16 @@ class YFCC_Dataset(Dataset):
 
         if 'train' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/train_filtered.txt'
-            # self.num_elements = 10240
+            # self.num_elements = 1024 * 500
         elif 'val' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/val.txt'
-            # self.num_elements = 1024
+            # self.num_elements = 1024 * 200
         else:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/test.txt'
 
         # Load GenSim Word2Vec model
         print("Loading textual model ...")
-        text_model_path = self.root_dir + '/vocab/vocab_100k.json'
+        text_model_path = '../../../datasets/YFCC100M/' + '/vocab/vocab_100k.json'
         self.text_model = json.load(open(text_model_path))
         print("Vocabulary size: " + str(len(self.text_model)))
         print("Normalizing vocab")
@@ -38,8 +38,7 @@ class YFCC_Dataset(Dataset):
 
         # Count number of elements
         print("Opening dataset ...")
-        self.num_elements = sum(1 for line in open(self.root_dir + '/splits/' + split))
-        # self.num_elements = 10480
+        self.num_elements = sum(1 for line in open('../../../datasets/YFCC100M/' + '/splits/' + split))
         print("Number of elements in " + split + ": " + str(self.num_elements))
 
         # Initialize containers
@@ -58,12 +57,11 @@ class YFCC_Dataset(Dataset):
             self.img_ids[i] = int(data[0])
             tags_array = data[1].split(',')
             self.tags.append(tags_array)
-
-            # self.latitudes[i] = float(data[4])
-            # self.longitudes[i] = float(data[5])
-            # # Coordinates normalization
-            # self.latitudes[i] = (self.latitudes[i] + 90) / 180
-            # self.longitudes[i] = (self.longitudes[i] + 180) / 360
+            self.latitudes[i] = float(data[4])
+            self.longitudes[i] = float(data[5])
+            # Coordinates normalization
+            self.latitudes[i] = (self.latitudes[i] + 90) / 180
+            self.longitudes[i] = (self.longitudes[i] + 180) / 360
 
         print("Data read. Set size: " + str(len(self.tags)))
 
@@ -80,6 +78,7 @@ class YFCC_Dataset(Dataset):
             img_id = int(d[0])
             img_em = np.asarray(d[1:], dtype=np.float32)
             img_em = img_em / np.linalg.norm(img_em, 2)
+            img_em[img_em != img_em] = 0
             self.img_embeddings[img_id] = img_em
         print("Img embeddings loaded: " + str(img_em_c))
 
@@ -91,25 +90,17 @@ class YFCC_Dataset(Dataset):
         tag_embedding = np.asarray(self.text_model[tag], dtype=np.float32)
         return tag_embedding
 
-    def __get_random_negative_triplet__(self, idx, img_n, tag_n, lat_n, lon_n):
+    def __get_random_negative_triplet__(self, idx, img_n, tag_n, lat_n, lon_n, tag_str):
 
         # Select randomly the element to change
-        # element_picker = random.randint(0, 2)
 
-        # TODO::: HARDCODED
+        # element_picker = random.randint(0, 2)
         element_picker = random.randint(0, 1)
-        # element_picker = 0
 
         if element_picker == 0:  # Change image
-
-            # if 'val' in self.split and idx == 1:
-            #     print("This val sample should be equal")
-
-
-            # if 'train' in self.split:
             while True:
                 negative_img_idx = random.randint(0, self.num_elements - 1)
-                if negative_img_idx != idx:
+                if negative_img_idx != idx and tag_str not in self.tags[negative_img_idx]:
                     break
                 negative_img_idx = random.randint(0, self.num_elements - 1)
             try:
@@ -120,19 +111,19 @@ class YFCC_Dataset(Dataset):
                 img_n = np.zeros(300, dtype=np.float32)
 
         elif element_picker == 1:  # Change tag
-            # if 'train' in self.split:
             while True:  # Check that image does not have the randlomly selected tag
                 cur_tag_neg = random.choice(self.tags_list)
                 if cur_tag_neg not in self.tags[idx]:
                     break
             tag_n = self.__getwordembedding__(cur_tag_neg)
-            # else:
-            #     tag_n = self.__getwordembedding__(self.tags_list[1])
 
+        # TODO: Here I should check that the selected location is farer than a TH
         else:  # Change location
             negative_location_idx = random.randint(0, self.num_elements - 1)
             lat_n = self.latitudes[negative_location_idx]
             lon_n = self.longitudes[negative_location_idx]
+
+        # TODO: I should also create hard triplets with a negative image sharing a tag but with a different location.
 
         return img_n, tag_n, lat_n, lon_n
 
@@ -162,18 +153,7 @@ class YFCC_Dataset(Dataset):
         #### Negatives selection
         ### Multiple Random negative selection
         for n_i in range(1,self.num_negatives+1):
-            images[n_i,:], tags[n_i,:], latitudes[n_i], longitudes[n_i] = self.__get_random_negative_triplet__(idx, images[0,:], tags[0,:], latitudes[0], longitudes[0])
-
-        # if 'val' in self.split and idx == 1:
-        #     print("img")
-        #     print(images[0,0:5])
-        #     print(images[1,0:5])
-
-        #     print("tags")
-        #     print(tags[0,0:5])
-        #     print(tags[1,0:5])
-
-
+            images[n_i,:], tags[n_i,:], latitudes[n_i], longitudes[n_i] = self.__get_random_negative_triplet__(idx, images[0,:], tags[0,:], latitudes[0], longitudes[0], tag_p)
 
         # Build tensors
         images = torch.from_numpy(images)

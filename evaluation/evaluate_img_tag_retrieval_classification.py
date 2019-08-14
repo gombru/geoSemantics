@@ -14,7 +14,7 @@ import json
 import numpy as np
 
 dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'YFCC_MLC_fromIN_miniTrain_frozen_epoch_1_ValLoss_0.07'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_smallTrain_lr0_02_LocZeros_2ndTraining_epoch_2_ValLoss_0.02'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 top_img_per_tag_path = dataset + 'results/' + model_name + '/tags_top_img.json'
 
@@ -22,7 +22,7 @@ out_freq_file = dataset + '/precisions_by_freqs/' + model_name + '.json'
 precisions_by_freqs = {}
 
 precision_k = 10  # Compute precision at k
-save_img = False  # Save some random image retrieval results
+save_img = True  # Save some random image retrieval results
 
 print("Loading tag list ...")
 tags_file = '../../../datasets/YFCC100M/vocab/vocab_words_100k.txt'
@@ -61,11 +61,18 @@ print("Total tags in test images with more than " + str(precision_k) + " appeara
 
 print("Starting per-tag evaluation")
 total_precision = 0.0
+tags_without_results = 0
+tags_evaluated = 0
 for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()):
-    if i % 100 == 0 and i > 0:
-        print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*total_precision/i))
+    if i % 100 == 0 and i > 0 and tags_evaluated > 0:
+        print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*total_precision/tags_evaluated))
 
-    top_img_curTag = top_img_per_tag[str(tags_list.index(tag))]
+    try:
+        top_img_curTag = top_img_per_tag[str(tags_list.index(tag))]
+        tags_evaluated+=1
+    except:
+        tags_without_results+=1
+        continue
 
     # Compute Precision at k
     correct = False
@@ -79,7 +86,7 @@ for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()
     total_precision += precision_tag
 
     # Save img
-    if save_img and correct and random.randint(0, 100) < 5:
+    if save_img and random.randint(0, 100) < 100: # and correct
         print("Saving results for: " + tag)
         if not os.path.isdir(dataset + '/retrieval_results/' + model_name + '/' + tag + '/'):
             os.makedirs(dataset + '/retrieval_results/' + model_name + '/' + tag + '/')
@@ -92,9 +99,11 @@ for i, (tag, test_appearances) in enumerate(tags_test_histogram_filtered.items()
     precisions_by_freqs[tag]['test_appearances'] = test_appearances
     precisions_by_freqs[tag]['precision'] = precision_tag
 
-total_precision /= len(tags_test_histogram_filtered)
+total_precision /= tags_evaluated
 
 print("Precision at " + str(precision_k) + ": " + str(total_precision*100))
 print(model_name)
+print("Tags evaluated: " + str(tags_evaluated))
+print("Tags without results: " + str(tags_without_results))
 
 json.dump(precisions_by_freqs, open(out_freq_file,'w'))

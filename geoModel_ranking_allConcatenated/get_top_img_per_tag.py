@@ -9,19 +9,22 @@ import json
 import numpy as np
 import YFCC_dataset_test_retrieval
 import random
+import time
 
 random.seed(0)
 
-dataset_folder = '../../../datasets/YFCC100M/'
+dataset_folder = '../../../hd/datasets/YFCC100M/'
 split = 'test.txt'
-img_backbone_model = 'YFCC_NCSL_2ndtraining_epoch_16_ValLoss_0.38'
+img_backbone_model = 'YFCC_MCLL_2ndtraining_epoch_5_ValLoss_6.55'
 
 batch_size = 1
-workers = 3
+workers = 0
 ImgSize = 224
 
-model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_2ndtraining_epoch_56_ValLoss_0.03.pth'
-model_name = model_name.replace('.pth','')
+num_query_tags = 1000
+
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_smallTrain_lr0_02_LocZeros_2ndTraining_epoch_2_ValLoss_0.02.pth'
+model_name = model_name.replace('.pth', '')
 
 gpus = [0]
 gpu = 0
@@ -33,8 +36,7 @@ output_file_path = dataset_folder + 'results/' + model_name + '/tags_top_img.jso
 output_file = open(output_file_path, "w")
 
 state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.tar',
-                        map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
-
+                        map_location={'cuda:1': 'cuda:0', 'cuda:2': 'cuda:0', 'cuda:3': 'cuda:0'})
 
 model_test = model.Model_Test_Retrieval()
 model_test = torch.nn.DataParallel(model_test, device_ids=gpus).cuda(gpu)
@@ -44,61 +46,54 @@ test_dataset = YFCC_dataset_test_retrieval.YFCC_Dataset(dataset_folder, img_back
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=workers,
                                           pin_memory=True)
 
-top_img_per_tagLoc_scores = torch.zeros([100000,10],  dtype=torch.float32).cuda(gpu) - 1000
-top_img_per_tagLoc_indices = torch.zeros([100000,10], dtype=torch.int64).cuda(gpu)
-
-
 # Load GenSim Word2Vec model
 print("Loading textual model ...")
 text_model_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
 text_model = json.load(open(text_model_path))
 print("Vocabulary size: " + str(len(text_model)))
 print("Normalizing vocab")
-for k,v in text_model.items():
+for i, (k, v) in enumerate(text_model.items()):
     v = np.asarray(v, dtype=np.float32)
-    text_model[k] = v / np.linalg.norm(v,2)
+    text_model[k] = v / np.linalg.norm(v, 2)
 
+tags_tensor = np.zeros([num_query_tags, 300], dtype=np.float32)
+latitudes_tensor = np.zeros([num_query_tags, 1], dtype=np.float32)
+longitudes_tensor = np.zeros([num_query_tags, 1], dtype=np.float32)
 
-print("Reading tags and locations ...")
-tags_names = []
-tags_tensor = np.zeros([100000,300],  dtype=np.float32)
-latitudes_tensor = np.zeros([100000,1],  dtype=np.float32)
-longitudes_tensor = np.zeros([100000,1],  dtype=np.float32)
-
-print("Loading tag list ...")
+print("Putting vocab in a tensor using ordered tag list")
 tags_file = '../../../datasets/YFCC100M/vocab/vocab_words_100k.txt'
-for line in open(tags_file):
-    tags_names.append(line.replace('\n',''))
+for i, line in enumerate(open(tags_file)):
+    if i == num_query_tags: break
+    tag = line.replace('\n', '').lower()
+    tags_tensor[i, :] = np.asarray(text_model[tag], dtype=np.float32)
+print("Tags tensor created")
 
+tags_tensor = torch.from_numpy(tags_tensor).cuda(gpu)
+latitudes_tensor = torch.from_numpy(latitudes_tensor).cuda(gpu)
+longitudes_tensor = torch.from_numpy(longitudes_tensor).cuda(gpu)
 
-for i,(k,v) in enumerate(text_model.items()):
-    tags_tensor[i,:] = text_model[k]
-    tags_names.append(k)
-
-tags_tensor = torch.from_numpy(tags_tensor).cuda()
-latitudes_tensor = torch.from_numpy(latitudes_tensor).cuda()
-longitudes_tensor = torch.from_numpy(longitudes_tensor).cuda()
+top_img_per_tagLoc_scores = torch.zeros([num_query_tags, 10], dtype=torch.float32).cuda(gpu) - 1000
+top_img_per_tagLoc_indices = torch.zeros([num_query_tags, 10], dtype=torch.int64).cuda(gpu)
 
 with torch.no_grad():
     model_test.eval()
     for i, (img_id, image) in enumerate(test_loader):
-
-        if i == 500: break
-
+        st = time.time()
         image_var = torch.autograd.Variable(image)
-        scores = model_test(image_var, tags_tensor, latitudes_tensor, longitudes_tensor)
+        scores = model_test(image_var, tags_tensor, latitudes_tensor, longitudes_tensor, gpu)
         scores = scores.squeeze(-1)
         values_to_replace, indices_to_replace = top_img_per_tagLoc_scores.min(dim=1)
         replacing_flags = scores > values_to_replace
         top_img_per_tagLoc_indices[replacing_flags, indices_to_replace[replacing_flags]] = float(img_id[0])
         top_img_per_tagLoc_scores[replacing_flags, indices_to_replace[replacing_flags]] = scores[replacing_flags]
-
-        print(str(i) + ' / ' + str(len(test_loader)))
+        end = time.time()
+        if i % 100 == 0:
+            print(str(i) + ' / ' + str(len(test_loader)) + " Time per iter: " + str(end - st))
 
 print("Generating results")
 results = {}
-for i in range(0,100000):
-    results[i] = top_img_per_tagLoc_indices[i,:].cpu().detach().numpy().astype(int).tolist()
+for i in range(0, num_query_tags):
+    results[i] = top_img_per_tagLoc_indices[i, :].cpu().detach().numpy().astype(int).tolist()
 
 print("Writing results")
 json.dump(results, output_file)

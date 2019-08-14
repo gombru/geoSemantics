@@ -8,30 +8,34 @@ import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Config
-training_id = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_2ndtraining'
-dataset = '../../../datasets/YFCC100M/'
+training_id = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc'
+
+dataset = '../../../hd/datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
 split_val = 'val.txt'
 
-img_backbone_model = 'YFCC_NCSL_2ndtraining_epoch_16_ValLoss_0.38'
+img_backbone_model = 'YFCC_MCLL_2ndtraining_epoch_5_ValLoss_6.55'
 
 margin = 0.1
 
-gpus = [0]
-gpu = 0
+gpus = [3]
+gpu = 3
 workers = 0 # 8 Num of data loading workers
 epochs = 10000
 start_epoch = 0 # Useful on restarts
 batch_size = 1024 # 1024 # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
-resume = dataset + 'models/saved/' + 'geoModel_ranking_allConcatenated_randomTriplets6Neg_epoch_9_ValLoss_0.04.pth.tar'  # Path to checkpoint top resume training
+resume = dataset + 'models/saved/' + 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_smallTrain_lr0_02_LocZeros_2ndTraining_epoch_2_ValLoss_0.02.pth.tar'  # Path to checkpoint top resume training
 plot = True
 best_epoch = 0
 best_correct_pairs = 0
 best_loss = 1000
 
+train_iters = 0
+val_iters = 0
+
 # Optimizer (SGD)
-lr =  0.25 # 0.25, 1
+lr =  0.005 # 0.2
 momentum = 0.9
 weight_decay = 1e-4
 
@@ -47,9 +51,17 @@ optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight
 if resume:
     print("Loading pretrained model")
     print("=> loading checkpoint '{}'".format(resume))
-    checkpoint = torch.load(resume, map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
+    checkpoint = torch.load(resume, map_location={'cuda:0':'cuda:3', 'cuda:1':'cuda:3', 'cuda:2':'cuda:3'})
     model.load_state_dict(checkpoint, strict=False)
     print("Checkpoint loaded")
+
+
+print("Reinitializing location layer") # model.module.extra_net.
+for l in model.module.extra_net.fc_loc.modules(): # Initialize only extra_net weights
+    if isinstance(l, nn.Linear):
+        print(l)
+        l.weight.data.normal_(0, 0.001) # Default init was 0.01
+        l.bias.data.zero_()
 
 cudnn.benchmark = True
 
@@ -90,10 +102,10 @@ for epoch in range(start_epoch, epochs):
     plot_data['epoch'] = epoch
 
     # Train for one epoch
-    plot_data = train_multiple_negatives.train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu, margin)
+    plot_data = train_multiple_negatives.train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu, margin, train_iters)
 
     # Evaluate on validation set
-    plot_data = train_multiple_negatives.validate(val_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu, margin)
+    plot_data = train_multiple_negatives.validate(val_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu, margin, val_iters)
 
 
     # Remember best model and save checkpoint

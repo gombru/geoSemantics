@@ -14,7 +14,7 @@ def save_checkpoint(model, filename, prefix_len):
     #     os.remove(cur_filename)
     torch.save(model.state_dict(), filename + '.pth.tar')
 
-def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu, margin):
+def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu, margin, num_iters):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     loss_meter = AverageMeter()
@@ -41,7 +41,7 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
 
         y = torch.ones(img.size()[0]).cuda(gpu, async=True)
         # If `y == 1` then it assumed the first input should be ranked higher (have a larger value) than the second input, and vice-versa for `y == -1`.
-        correct = torch.zeros([1], dtype=torch.int32).cuda()
+        correct = torch.zeros([1], dtype=torch.int32).cuda(gpu, async=True)
 
         for n_i in range(1,num_neg):
             s_n = model(img[:, n_i, :], tag[:, n_i, :], lat[:, n_i, :], lon[:, n_i, :])
@@ -69,15 +69,6 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
         batch_time.update(time.time() - end)
         end = time.time()
 
-        # if  epoch % 200 == 0 and i != 0:
-        #     filename = '../../../datasets/YFCC100M/' + '/models/' + 'geoModel_ranking_allConcatenated_randomTriplets_M2_' + '_epoch_' + str(epoch) + '_TrainLoss_' + str(round(loss.data.item(), 2))
-        #     prefix_len = len(str(i) + '_TrainLoss_' + str(round(loss.data.item(), 2)))
-        #     save_checkpoint(model, filename, prefix_len)
-
-
-
-
-
         if i % print_freq == 0:
             print('Epoch: [{0}][{1}/{2}]\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
@@ -88,6 +79,11 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
                    epoch, i, len(train_loader), batch_time=batch_time,
                    data_time=data_time, loss=loss_meter, correct_pairs=correct_pairs))
 
+        if i == num_iters-1:
+            plot_data['train_loss'][plot_data['epoch']] = loss_meter.avg
+            plot_data['train_correct_pairs'][plot_data['epoch']] = correct_pairs.avg
+            return plot_data
+
     plot_data['train_loss'][plot_data['epoch']] = loss_meter.avg
     plot_data['train_correct_pairs'][plot_data['epoch']] = correct_pairs.avg
 
@@ -95,13 +91,13 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
     return plot_data
 
 
-def validate(val_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu, margin):
+def validate(val_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu, margin, num_iters):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     loss_meter = AverageMeter()
     correct_pairs = AverageMeter()
 
-    model.train() # THIS FUCKS VALIDATION!!!
+    model.eval()
     end = time.time()
 
     with torch.no_grad():
@@ -122,7 +118,7 @@ def validate(val_loader, model, criterion, optimizer, epoch, print_freq, plot_da
 
             y = torch.ones(img.size()[0]).cuda(gpu, async=True)
             # If `y == 1` then it assumed the first input should be ranked higher (have a larger value) than the second input, and vice-versa for `y == -1`.
-            correct = torch.zeros([1], dtype=torch.int32).cuda()
+            correct = torch.zeros([1], dtype=torch.int32).cuda(gpu, async=True)
 
             for n_i in range(1, num_neg):
                 s_n = model(img[:, n_i, :], tag[:, n_i, :], lat[:, n_i, :], lon[:, n_i, :])
@@ -156,6 +152,11 @@ def validate(val_loader, model, criterion, optimizer, epoch, print_freq, plot_da
                       .format(
                        epoch, i, len(val_loader), batch_time=batch_time,
                        data_time=data_time, loss=loss_meter, correct_pairs=correct_pairs))
+
+            if i == num_iters-1:
+                plot_data['val_loss'][plot_data['epoch']] = loss_meter.avg
+                plot_data['val_correct_pairs'][plot_data['epoch']] = correct_pairs.avg
+                return plot_data
 
     plot_data['val_loss'][plot_data['epoch']] = loss_meter.avg
     plot_data['val_correct_pairs'][plot_data['epoch']] = correct_pairs.avg

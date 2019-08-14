@@ -6,20 +6,21 @@ import model
 import json
 import numpy as np
 import YFCC_dataset_test_tagging
+import time
 
-dataset_folder = '../../../datasets/YFCC100M/'
+dataset_folder = '../../../hd/datasets/YFCC100M/'
 split = 'test.txt'
-img_backbone_model = 'YFCC_NCSL_2ndtraining_epoch_16_ValLoss_0.38'
+img_backbone_model = 'YFCC_MCLL_2ndtraining_epoch_5_ValLoss_6.55'
 
 batch_size = 1
-workers = 3
+workers = 0
 ImgSize = 224
 
-model_name = 'geoModel_ranking_allConcatenated_randomTriplets_M2_8_epoch_9999.pth'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_smallTrain_lr0_02_LocZeros_2ndTraining_epoch_2_ValLoss_0.02.pth'
 model_name = model_name.replace('.pth', '')
 
-gpus = [0]
-gpu = 0
+gpus = [1]
+gpu = 1
 
 if not os.path.exists(dataset_folder + 'results/' + model_name):
     os.makedirs(dataset_folder + 'results/' + model_name)
@@ -27,8 +28,8 @@ if not os.path.exists(dataset_folder + 'results/' + model_name):
 output_file_path = dataset_folder + 'results/' + model_name + '/images_test.json'
 output_file = open(output_file_path, "w")
 
-state_dict = torch.load(dataset_folder + '/models/' + model_name + '.pth.tar',
-                        map_location={'cuda:1': 'cuda:0', 'cuda:2': 'cuda:0', 'cuda:3': 'cuda:0'})
+state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.tar',
+                        map_location={'cuda:0': 'cuda:1', 'cuda:2': 'cuda:1', 'cuda:3': 'cuda:1'})
 
 model_test = model.Model_Test_Tagging()
 model_test = torch.nn.DataParallel(model_test, device_ids=gpus).cuda(gpu)
@@ -54,7 +55,7 @@ tags_file = '../../../datasets/YFCC100M/vocab/vocab_words_100k.txt'
 for i, line in enumerate(open(tags_file)):
     tag = line.replace('\n', '').lower()
     tags_tensor[i, :] = np.asarray(text_model[tag], dtype=np.float32)
-tags_tensor = torch.autograd.Variable(torch.from_numpy(tags_tensor).cuda())
+tags_tensor = torch.autograd.Variable(torch.from_numpy(tags_tensor).cuda(gpu))
 print("Tags tensor created")
 
 print("Running model...")
@@ -62,19 +63,21 @@ results = {}
 with torch.no_grad():
     model_test.eval()
     for i, (img_id, img, lat, lon) in enumerate(test_loader):
+        st = time.time()
         img = torch.autograd.Variable(img)
         lat = torch.autograd.Variable(lat)
         lon = torch.autograd.Variable(lon)
         # Try to run it with BS of 100k (vocab size). Else create here mini-batches and stack results
-        outputs = model_test(img, tags_tensor, lat, lon)
+        outputs = model_test(img, tags_tensor, lat, lon, gpu)
         outputs = outputs.squeeze(-1)
         top_values, top_tag_indices = outputs.topk(10)
         results[str(img_id)] = {}
         results[str(img_id)]['tags_indices'] = np.array(top_tag_indices.cpu()).tolist()
         results[str(img_id)]['tags_scores'] = np.array(top_values.cpu()).tolist()
 
-        if i % 100 == 0:
-            print(str(i) + ' / ' + str(len(test_loader)))
+        end = time.time()
+        if i % 100 == 0 :
+            print(str(i) + ' / ' + str(len(test_loader)) + " Time per iter: " + str(end-st))
 
 print("Writing results")
 json.dump(results, output_file)

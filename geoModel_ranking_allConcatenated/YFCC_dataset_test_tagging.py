@@ -17,8 +17,8 @@ class YFCC_Dataset(Dataset):
 
         # Count number of elements
         print("Opening dataset ...")
-        self.num_elements = sum(1 for line in open(self.root_dir + 'splits/' + split))
-        self.num_elements = 100
+        self.num_elements = sum(1 for line in open('../../../datasets/YFCC100M/' + 'splits/' + split))
+        self.num_elements = 1000
         print("Number of elements in " + split + ": " + str(self.num_elements))
 
         # Initialize containers
@@ -29,16 +29,16 @@ class YFCC_Dataset(Dataset):
 
         # Read data
         print("Reading split data ...")
-        for i, line in enumerate(open(self.root_dir + 'splits/' + split)):
+        for i, line in enumerate(open('../../../datasets/YFCC100M/' + 'splits/' + split)):
             if i % 2000000 == 0 and i != 0: print(i)
             if i == self.num_elements: break
             data = line.split(';')
             self.img_ids[i] = int(data[0])
-            # self.latitudes[i] = float(data[4])
-            # self.longitudes[i] = float(data[5])
+            self.latitudes[i] = float(data[4])
+            self.longitudes[i] = float(data[5])
             # Coordinates normalization
-            # self.latitudes[i] = (self.latitudes[i] + 90) / 180
-            # self.longitudes[i] = (self.longitudes[i] + 180) / 360
+            self.latitudes[i] = (self.latitudes[i] + 90) / 180
+            self.longitudes[i] = (self.longitudes[i] + 180) / 360
 
         print("Data read. Set size: " + str(len(self.img_ids)))
         print("Latitudes min and max: " + str(min(self.latitudes)) + ' ; ' + str(max(self.latitudes)))

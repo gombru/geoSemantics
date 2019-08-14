@@ -12,7 +12,7 @@ import json
 import numpy as np
 
 dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'YFCC_MLC_fromIN_iter_50000_TrainLoss_0.02'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_smallTrain_lr0_02_LocZeros_2ndTraining_epoch_2_ValLoss_0.02.pth'
 model_name = model_name.replace('.pth', '')
 print(model_name)
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
@@ -58,6 +58,7 @@ for i, (img_id, img_result) in enumerate(results.items()):
         if tags_list[cur_img_tag] in test_images_tags[img_id]:
             total_accuracy_at_k += 1
             break
+    # print(aux)
 
 
     # print("Result")

@@ -37,8 +37,8 @@ def check_location(lat1,lon1,lat2,lon2):
             break
     return results
 
-dataset = '../../../datasets/YFCC100M/'
-model_name = 'geoModel_to_test'
+dataset = '../../../hd/datasets/YFCC100M/'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_smallTrain_test_epoch_4_ValLoss_0.02'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 top_img_per_tag_path = dataset + 'results/' + model_name + '/tagLoc_top_img.json'
 
@@ -89,8 +89,8 @@ for i, (pair_info, cur_tag_top_img) in enumerate(top_img_per_tag.items()):
 
     d = pair_info.split(',')
     cur_tag = d[0]
-    cur_lat = float(d[1]) * 180 - 90 # + 90) / 180
-    cur_lon = float(d[2]) * 360 -  180 #  180) / 360
+    cur_lat = float(d[1]) # * 180 - 90 # + 90) / 180
+    cur_lon = float(d[2]) # * 360 -  180 #  180) / 360
 
     if cur_tag not in tags_test_histogram_filtered:
         ignored+=1
