@@ -8,7 +8,7 @@ import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Config
-training_id = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc'
+training_id = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc_2ndTraining'
 
 dataset = '../../../hd/datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
@@ -21,11 +21,11 @@ margin = 0.1
 gpus = [3]
 gpu = 3
 workers = 0 # 8 Num of data loading workers
-epochs = 10000
+epochs = 2000
 start_epoch = 0 # Useful on restarts
 batch_size = 1024 # 1024 # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
-resume = dataset + 'models/saved/' + 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_smallTrain_lr0_02_LocZeros_2ndTraining_epoch_2_ValLoss_0.02.pth.tar'  # Path to checkpoint top resume training
+resume = dataset + 'models/saved/' + 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc_epoch_8_ValLoss_0.02.pth.tar'  # Path to checkpoint top resume training
 plot = True
 best_epoch = 0
 best_correct_pairs = 0
@@ -35,7 +35,7 @@ train_iters = 0
 val_iters = 0
 
 # Optimizer (SGD)
-lr =  0.005 # 0.2
+lr =  0.0005 # 0.2  # 0.02 # 0.005 # 0.0005
 momentum = 0.9
 weight_decay = 1e-4
 
@@ -56,12 +56,12 @@ if resume:
     print("Checkpoint loaded")
 
 
-print("Reinitializing location layer") # model.module.extra_net.
-for l in model.module.extra_net.fc_loc.modules(): # Initialize only extra_net weights
-    if isinstance(l, nn.Linear):
-        print(l)
-        l.weight.data.normal_(0, 0.001) # Default init was 0.01
-        l.bias.data.zero_()
+# print("Reinitializing location layer") # model.module.extra_net.
+# for l in model.module.extra_net.fc_loc.modules(): # Initialize only extra_net weights
+#     if isinstance(l, nn.Linear):
+#         print(l)
+#         l.weight.data.normal_(0, 0.001) # Default init was 0.01
+#         l.bias.data.zero_()
 
 cudnn.benchmark = True
 
@@ -93,7 +93,7 @@ ax1.set_xlabel('epoch')
 ax1.set_ylabel('train loss (r), val loss (y)')
 ax2.set_ylabel('train correct pairs (b), val correct pairs (g)')
 ax2.set_autoscaley_on(False)
-ax1.set_ylim([0, 0.1])
+ax1.set_ylim([0, 0.02])
 ax2.set_ylim([0, batch_size + 0.2])
 
 print("Dataset and model ready. Starting training ...")
@@ -113,8 +113,8 @@ for epoch in range(start_epoch, epochs):
     if is_best:
         print("New best model by loss. Val Loss = " + str(plot_data['val_loss'][epoch]))
         best_loss = plot_data['val_loss'][epoch]
-        filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2))
-        prefix_len = len('_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2)))
+        filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],3))
+        prefix_len = len('_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],3)))
         train_multiple_negatives.save_checkpoint(model, filename, prefix_len)
 
     if plot:

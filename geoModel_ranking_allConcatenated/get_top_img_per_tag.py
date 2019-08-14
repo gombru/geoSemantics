@@ -21,13 +21,13 @@ batch_size = 1
 workers = 0
 ImgSize = 224
 
-num_query_tags = 1000
+num_query_tags = 100000
 
 model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_smallTrain_lr0_02_LocZeros_2ndTraining_epoch_2_ValLoss_0.02.pth'
 model_name = model_name.replace('.pth', '')
 
-gpus = [0]
-gpu = 0
+gpus = [1]
+gpu = 1
 
 if not os.path.exists(dataset_folder + 'results/' + model_name):
     os.makedirs(dataset_folder + 'results/' + model_name)
@@ -36,7 +36,7 @@ output_file_path = dataset_folder + 'results/' + model_name + '/tags_top_img.jso
 output_file = open(output_file_path, "w")
 
 state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.tar',
-                        map_location={'cuda:1': 'cuda:0', 'cuda:2': 'cuda:0', 'cuda:3': 'cuda:0'})
+                        map_location={'cuda:0': 'cuda:1', 'cuda:2': 'cuda:1', 'cuda:3': 'cuda:1'})
 
 model_test = model.Model_Test_Retrieval()
 model_test = torch.nn.DataParallel(model_test, device_ids=gpus).cuda(gpu)

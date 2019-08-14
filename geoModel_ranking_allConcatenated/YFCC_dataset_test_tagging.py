@@ -18,7 +18,7 @@ class YFCC_Dataset(Dataset):
         # Count number of elements
         print("Opening dataset ...")
         self.num_elements = sum(1 for line in open('../../../datasets/YFCC100M/' + 'splits/' + split))
-        self.num_elements = 1000
+        self.num_elements = 2000
         print("Number of elements in " + split + ": " + str(self.num_elements))
 
         # Initialize containers

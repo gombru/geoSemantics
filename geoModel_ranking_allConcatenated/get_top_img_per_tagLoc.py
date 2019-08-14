@@ -18,13 +18,13 @@ split = 'test.txt'
 img_backbone_model = 'YFCC_MCLL_2ndtraining_epoch_5_ValLoss_6.55'
 
 batch_size = 1
-workers = 3
+workers = 0
 ImgSize = 224
 
-num_query_pairs = 50 # 500000
+num_query_pairs = 100000 # 500000
 print("Using num query paris: " + str(num_query_pairs))
 
-model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_smallTrain_lr0_02_LocZeros_2ndTraining_epoch_2_ValLoss_0.02.pth'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc_epoch_5_ValLoss_0.02.pth'
 model_name = model_name.replace('.pth','')
 
 gpus = [2]
@@ -68,8 +68,6 @@ top_img_per_tagLoc_indices = torch.zeros([num_query_pairs,10], dtype=torch.int64
 print("Loading tag|loc queries ...")
 queries_file = dataset_folder + 'geosensitive_queries/queries.txt'
 query_tags_names = []
-query_lats = []
-query_lons = []
 query_lats_str = []
 query_lons_str = []
 for i,line in enumerate(open(queries_file, 'r')):
@@ -77,18 +75,16 @@ for i,line in enumerate(open(queries_file, 'r')):
         print("Stopping at num_queries: " + str(i))
         break
     d = line.split(',')
-    query_tags.append(d[0])
+    query_tags_names.append(d[0])
     lat = (float(d[1]) + 90) / 180
     lon = (float(d[2]) + 180) / 360
-    query_lats.append(lat)
-    query_lons.append(lon)
     query_lats_str.append(d[1])
     query_lons_str.append(d[2].replace('\n',''))
     query_tags_tensor[i,:] = np.asarray(text_model[d[0]], dtype=np.float32)
     latitudes_tensor[i,:] = lat
     longitudes_tensor[i,:] = lon
 
-print("Number of queries: " + str(len(query_tags)))
+print("Number of queries: " + str(len(query_lats_str)))
 
 query_tags_tensor = torch.from_numpy(query_tags_tensor).cuda(gpu)
 latitudes_tensor = torch.from_numpy(latitudes_tensor).cuda(gpu)

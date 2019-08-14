@@ -18,10 +18,10 @@ class YFCC_Dataset(Dataset):
 
         if 'train' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/train_filtered.txt'
-            # self.num_elements = 1024 * 500
+            # self.num_elements = 1024 * 50
         elif 'val' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/val.txt'
-            # self.num_elements = 1024 * 200
+            # self.num_elements = 1024 * 5
         else:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/test.txt'
 

@@ -40,15 +40,15 @@ class Model_Test_Retrieval(nn.Module):
         self.extra_net = MMNet()
 
     def forward(self, img, tag, lat, lon, gpu):
-        # Here tag is [100kx300]
-        # Others are [1xk], so I expand them
+        # Here tag is [100kx300], lat and lon [100kx1]
+        # img [1xk], so I expand it
         img_batch = torch.zeros([len(tag), 300], dtype=torch.float32).cuda(gpu)
-        lat_batch = torch.zeros([len(tag), 1], dtype=torch.float32).cuda(gpu)
-        lon_batch = torch.zeros([len(tag), 1], dtype=torch.float32).cuda(gpu)
+        # lat_batch = torch.zeros([len(tag), 1], dtype=torch.float32).cuda(gpu)
+        # lon_batch = torch.zeros([len(tag), 1], dtype=torch.float32).cuda(gpu)
         img_batch[:,:] = img
-        lat_batch[:,:] = lat_batch
-        lon_batch[:,:] = lon_batch
-        score = self.extra_net(img_batch, tag, lat_batch, lon_batch)
+        # lat_batch[:,:] = lat_batch
+        # lon_batch[:,:] = lon_batch
+        score = self.extra_net(img_batch, tag, lat, lon)
         return score
 
 
@@ -65,8 +65,8 @@ class Model_Test_Tagging(nn.Module):
         lat_batch = torch.zeros([len(tag), 1], dtype=torch.float32).cuda(gpu)
         lon_batch = torch.zeros([len(tag), 1], dtype=torch.float32).cuda(gpu)
         img_batch[:,:] = img
-        lat_batch[:,:] = lat_batch
-        lon_batch[:,:] = lon_batch
+        lat_batch[:,:] = lat
+        lon_batch[:,:] = lon
         score = self.extra_net(img_batch, tag, lat_batch, lon_batch)
         return score
 
@@ -110,7 +110,7 @@ class MMNet(nn.Module):
         loc[loc != loc] = 0  # avoid nans
 
         # Set loc to 0!
-        loc = loc * 0
+        # loc = loc * 0
 
         # Concatenate
         x = torch.cat((img, tag), dim=1)
