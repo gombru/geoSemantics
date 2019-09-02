@@ -40,36 +40,19 @@ granularities_str = ['street level (1km)', 'city (25km)', 'region (200km)', 'cou
 
 dataset = '../../../hd/datasets/YFCC100M/'
 queries_file = dataset + 'geosensitive_queries/queries.txt'
-model_name = 'YFCC_NCSL_2ndtraining_epoch_16_ValLoss_0.38'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_smallTrain_lr0_02_LocZeros_2ndTraining_epoch_2_ValLoss_0.02'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
-img_embeddings_path = dataset + 'results/' + model_name + '/images_embeddings_test.json'
-# tags_embeddings_path = dataset + 'results/' + model_name + '/tags_embeddings.json'
-# If using GloVe embeddings directly 370111
-print("Using GloVe embeddings")
-tags_embeddings_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
-embedding_dim = 300
+top_img_per_tag_path = dataset + 'results/' + model_name + '/tags_top_img.json'
 precision_k = 10  # Compute precision at k
 save_img = False  # Save some random image retrieval results
 
-measure = 'distance' # 'distance', 'cosineSim', 'dotP'
 
-distance_norm = 1 # 2
-if measure == 'distance':
-    print("Using pairwise distance with norm: " + str(distance_norm))
-
-normalize = True # Normalize img embeddings and tag embeddings using L2 norm
-print("Normalize tags and img embeddings: " + str(normalize))
-
-print("Reading tags embeddings ...")
-tags_embeddings = json.load(open(tags_embeddings_path))
-print("Reading imgs embeddings ...")
-img_embeddings = json.load(open(img_embeddings_path))
 print("Reading tags of testing images ...")
 test_images_tags, test_images_latitudes, test_images_longitudes = aux.read_tags_and_locations(test_split_path)
 print("Num test images read: " + str(len(test_images_tags)))
 
-if normalize:
-    print("Using L2 normalization on img AND tag embeddings")
+print("Reading top img per class")
+top_img_per_tag = json.load(open(top_img_per_tag_path))
 
 print("Reading queries")
 query_tags = []
@@ -81,6 +64,13 @@ for line in open(queries_file,'r'):
     query_lats.append(float(d[1]))
     query_lons.append(float(d[2]))
 print("Number of queries: " + str(len(query_tags)))
+
+print("Loading tag list ...")
+tags_file = '../../../datasets/YFCC100M/vocab/vocab_words_100k.txt'
+tags_list = []
+for line in open(tags_file):
+    tags_list.append(line.replace('\n', ''))
+print("Vocabulary size: " + str(len(tags_list)))
 
 print("Get tags with at least k appearances in test images")
 tags_test_histogram = {}
@@ -102,21 +92,6 @@ for k, v in tags_test_histogram.items():
 print("Total tags in test images with more than " + str(precision_k) + " appearances: " + str(
     len(tags_test_histogram_filtered)))
 
-print("Putting image embeddings in a tensor")
-# Put img embeddings in a tensor
-img_embeddings_tensor = torch.zeros([len(img_embeddings), embedding_dim], dtype=torch.float32).cuda()
-img_ids = []
-for i, (img_id, img_embedding) in enumerate(img_embeddings.items()):
-    img_ids.append(img_id)
-    img_np_embedding = np.asarray(img_embedding, dtype=np.float32)
-    if normalize:
-        img_np_embedding /= np.linalg.norm(img_np_embedding)
-    img_embeddings_tensor[i, :] = torch.from_numpy(img_np_embedding)
-del img_embeddings
-
-print("Starting per-tag evaluation")
-dist = nn.PairwiseDistance(p=distance_norm)
-cosSim = nn.CosineSimilarity(dim=1, eps=1e-6)
 
 precisions = np.zeros(len(granularities), dtype=np.float32)
 ignored = 0
@@ -127,47 +102,25 @@ for i, cur_tag in enumerate(query_tags):
         ignored+=1
         continue
 
+    try:
+        top_img_curTag = top_img_per_tag[str(tags_list.index(cur_tag))]
+    except:
+        ignored+=1
+        continue
+
     used+=1
 
-    if i % 500 == 0 and i > 0:
-        print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*precisions[0]/i))
-        print(precisions)
-    print(tags_embeddings.keys())
-    tag_np_embedding = np.asarray(tags_embeddings[cur_tag], dtype=np.float32)
-    if normalize:
-        tag_np_embedding /= np.linalg.norm(tag_np_embedding)
-
-    tag_embedding_tensor = torch.from_numpy(tag_np_embedding).cuda()
-
-    if measure == 'distance':
-        # print("Shapes")
-        # print(img_embeddings_tensor.shape)
-        # print(tag_embedding_tensor.shape)
-        distances = dist(img_embeddings_tensor, tag_embedding_tensor)
-        indices_sorted = np.array(distances.sort(descending=False)[1][0:precision_k].cpu())
-
-    elif measure == 'cosineSim':
-        similarities = cosSim(img_embeddings_tensor, tag_embedding_tensor)
-        indices_sorted = np.array(distances.sort(descending=True)[1][0:precision_k].cpu())
-
-
-    # Need to apply softmax though images scores for each tag!
-    # elif measure == 'dotP':
-    #     products = img_embeddings_tensor.mm(tag_embedding_tensor.reshape(1,-1).t()).view(-1)
-    #     indices_sorted = np.array(products.sort(descending=True)[1][0:precision_k].cpu())
-
-    else:
-        print("Measure not found: " + str(measure))
-        break
-
+    if i % 5000 == 0 and used > 0:
+        print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*precisions[0]/used))
+        print(precisions/used)
 
     # Compute Precision at k
     correct = False
     precisions_tag = np.zeros(len(granularities), dtype=np.float32)
-    for top_img_idx in indices_sorted:
-        if cur_tag in test_images_tags[int(img_ids[top_img_idx])]:
+    for top_img_idx in top_img_curTag:
+        if cur_tag in test_images_tags[int(top_img_idx)]:
             # The image has query tag. Now check its location!
-            results = check_location(query_lats[i], query_lons[i], test_images_latitudes[int(img_ids[top_img_idx])], test_images_longitudes[int(img_ids[top_img_idx])])
+            results = check_location(query_lats[i], query_lons[i], test_images_latitudes[int(top_img_idx)], test_images_longitudes[int(top_img_idx)])
             for r_i,r in enumerate(results):
                 if r == 1:
                     precisions_tag[r_i] += 1
@@ -179,15 +132,16 @@ for i, cur_tag in enumerate(query_tags):
 
     precisions += precisions_tag
 
+
     # Save img
     if save_img and correct and random.randint(0, 100) < 5:
         print("Saving results for: " + tag)
         if not os.path.isdir(dataset + '/retrieval_results/' + model_name + '/' + tag + '/'):
             os.makedirs(dataset + '/retrieval_results/' + model_name + '/' + tag + '/')
 
-        for idx in indices_sorted:
-            copyfile('../../../datasets/YFCC100M/test_img/' + img_ids[idx] + '.jpg',
-                     dataset + '/retrieval_results/' + model_name + '/' + tag + '/' + img_ids[idx] + '.jpg')
+        for idx in top_img_curTag:
+            copyfile('../../../datasets/YFCC100M/test_img/' + str(idx) + '.jpg',
+                     dataset + '/retrieval_results/' + model_name + '/' + tag + '/' + str(idx) + '.jpg')
 
 
 precisions /= used

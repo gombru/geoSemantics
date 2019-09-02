@@ -21,14 +21,14 @@ batch_size = 1
 workers = 0
 ImgSize = 224
 
-num_query_pairs = 100000 # 500000
+num_query_pairs = 1000 # 100000 # 500000
 print("Using num query paris: " + str(num_query_pairs))
 
-model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc_epoch_5_ValLoss_0.02.pth'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc_2ndTraining_epoch_228_ValLoss_0.015.pth'
 model_name = model_name.replace('.pth','')
 
-gpus = [2]
-gpu = 2
+gpus = [1]
+gpu = 1
 
 if not os.path.exists(dataset_folder + 'results/' + model_name):
     os.makedirs(dataset_folder + 'results/' + model_name)
@@ -37,7 +37,7 @@ output_file_path = dataset_folder + 'results/' + model_name + '/tagLoc_top_img.j
 output_file = open(output_file_path, "w")
 
 state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.tar',
-                        map_location={'cuda:0':'cuda:2', 'cuda:1':'cuda:2', 'cuda:3':'cuda:2'})
+                        map_location={'cuda:0':'cuda:1', 'cuda:2':'cuda:1', 'cuda:3':'cuda:1'})
 
 
 model_test = model.Model_Test_Retrieval()

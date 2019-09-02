@@ -38,7 +38,7 @@ def check_location(lat1,lon1,lat2,lon2):
     return results
 
 dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_smallTrain_test_epoch_4_ValLoss_0.02'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc_epoch_5_ValLoss_0.02'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 top_img_per_tag_path = dataset + 'results/' + model_name + '/tagLoc_top_img.json'
 
@@ -55,6 +55,7 @@ print("Vocabulary size: " + str(len(tags_list)))
 
 print("Reading top img per class")
 top_img_per_tag = json.load(open(top_img_per_tag_path))
+print("Num query pairs: "+ str(len(top_img_per_tag.keys())))
 
 print("Reading tags and locations of testing images ...")
 test_images_tags, test_images_latitudes, test_images_longitudes = aux.read_tags_and_locations(test_split_path)
@@ -98,8 +99,8 @@ for i, (pair_info, cur_tag_top_img) in enumerate(top_img_per_tag.items()):
 
     used+=1
 
-    if i % 100 == 0 and i > 0:
-        print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*precisions[0]/i))
+    if i % 100 == 0 and used > 0:
+        print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*precisions[0]/used))
 
 
     # Compute Precision at k

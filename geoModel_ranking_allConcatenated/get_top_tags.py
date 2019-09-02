@@ -16,7 +16,7 @@ batch_size = 1
 workers = 0
 ImgSize = 224
 
-model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc_epoch_5_ValLoss_0.02.pth'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc_2ndTraining_epoch_228_ValLoss_0.015.pth'
 model_name = model_name.replace('.pth', '')
 
 gpus = [2]
