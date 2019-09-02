@@ -2,13 +2,13 @@ import torch.nn as nn
 import torch.backends.cudnn as cudnn
 import torch.utils.data
 import torch.utils.data.distributed
-import YFCC_dataset_multiple_negatives
+import YFCC_dataset_multiple_negatives_byTag as CustomDataset
 import train_multiple_negatives
 import model
 from pylab import zeros, arange, subplots, plt, savefig
 
 # Config
-training_id = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc_2ndTraining'
+training_id = 'geoModel_ranking_allConcatenated_randomTriplets6NegbyTag_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc'
 
 dataset = '../../../hd/datasets/YFCC100M/'
 split_train = 'train_filtered.txt'
@@ -25,7 +25,7 @@ epochs = 2000
 start_epoch = 0 # Useful on restarts
 batch_size = 1024 # 1024 # Batch size
 print_freq = 1 # An epoch are 60000 iterations. Print every 100: Every 40k images
-resume = dataset + 'models/saved/' + 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc_epoch_8_ValLoss_0.02.pth.tar'  # Path to checkpoint top resume training
+resume = dataset + 'models/saved/' + 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc_2ndTraining_epoch_228_ValLoss_0.015.pth.tar'  # Path to checkpoint top resume training
 plot = True
 best_epoch = 0
 best_correct_pairs = 0
@@ -35,7 +35,7 @@ train_iters = 0
 val_iters = 0
 
 # Optimizer (SGD)
-lr =  0.0005 # 0.2  # 0.02 # 0.005 # 0.0005
+lr = 0.0005 # 0.2  # 0.02 # 0.005 # 0.0005
 momentum = 0.9
 weight_decay = 1e-4
 
@@ -66,10 +66,10 @@ if resume:
 cudnn.benchmark = True
 
 # Data loading code (pin_memory allows better transferring of samples to GPU memory)
-train_dataset = YFCC_dataset_multiple_negatives.YFCC_Dataset(
+train_dataset = CustomDataset.YFCC_Dataset(
     dataset,split_train,img_backbone_model)
 
-val_dataset = YFCC_dataset_multiple_negatives.YFCC_Dataset(
+val_dataset = CustomDataset.YFCC_Dataset(
     dataset, split_val,img_backbone_model)
 
 train_loader = torch.utils.data.DataLoader(
