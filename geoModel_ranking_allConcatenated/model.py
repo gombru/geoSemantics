@@ -51,6 +51,24 @@ class Model_Test_Retrieval(nn.Module):
         score = self.extra_net(img_batch, tag, lat, lon)
         return score
 
+class Model_Test_Retrieval_ImgBatch(nn.Module):
+
+    def __init__(self):
+        super(Model_Test_Retrieval_ImgBatch, self).__init__()
+        self.extra_net = MMNet()
+
+    def forward(self, img, tag, lat, lon, gpu):
+        # Here img is [500kx300], tag 300, lat, lon 1
+        # img [1xk], so I expand it
+        tag_batch = torch.zeros([len(img), 300], dtype=torch.float32).cuda(gpu)
+        lat_batch = torch.zeros([len(img), 1], dtype=torch.float32).cuda(gpu)
+        lon_batch = torch.zeros([len(img), 1], dtype=torch.float32).cuda(gpu)
+        tag_batch[:,:] = tag
+        lat_batch[:,:] = lat
+        lon_batch[:,:] = lon
+        score = self.extra_net(img, tag_batch, lat_batch, lon_batch)
+        return score
+
 
 class Model_Test_Tagging(nn.Module):
 

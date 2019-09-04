@@ -21,9 +21,9 @@ batch_size = 1
 workers = 0
 ImgSize = 224
 
-num_query_tags = 100000
+num_query_tags = 1000 # 20000
 
-model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_smallTrain_lr0_02_LocZeros_2ndTraining_epoch_2_ValLoss_0.02.pth'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets6NegByTag_MCLL_GN_TAGIMGL2_EML2_lr0_02_LocZeros_epoch_6_ValLoss_0.04.pth'
 model_name = model_name.replace('.pth', '')
 
 gpus = [1]

@@ -19,11 +19,13 @@ class YFCC_Dataset(Dataset):
         if 'train' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/train_filtered.txt'
             images_per_tag_file = '../../../datasets/YFCC100M/' + 'splits/images_per_tag_train_filtered.json'
-            # self.num_elements = 1024 * 50
+            # self.num_elements = 1024 * 200
+            self.min_images = 12
         elif 'val' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/val.txt'
             images_per_tag_file = '../../../datasets/YFCC100M/' + 'splits/images_per_tag_val.json'
-            # self.num_elements = 1024 * 5
+            # self.num_elements = 1024 * 20
+            self.min_images = 2
         else:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/test.txt'
             images_per_tag_file = '../../../datasets/YFCC100M/' + 'splits/images_per_tag_test.json'
@@ -93,7 +95,7 @@ class YFCC_Dataset(Dataset):
         print("Img embeddings loaded: " + str(img_em_c))
 
     def __len__(self):
-        return len(self.tags_list)
+        return len(self.img_ids)
 
     def __getwordembedding__(self, tag):
         tag = tag.lower()
@@ -145,28 +147,43 @@ class YFCC_Dataset(Dataset):
         latitudes = np.zeros((self.num_negatives + 1, 1), dtype=np.float32)
         longitudes = np.zeros((self.num_negatives + 1, 1), dtype=np.float32)
 
-        # Now idx is in [0-numTags]
-        tag_a = self.tags_list[idx]
+        tag_a = random.choice(self.tags_list)
+
         # Check that there are images for the anchor tag
-        min_images = 3
+        tries = 0
         while True:
             img_with_cur_tag = self.images_per_tag[tag_a]
             if isinstance(img_with_cur_tag, list):
                 num_img_with_cur_tag = len(img_with_cur_tag)
             else:
                 num_img_with_cur_tag = 0
-            if num_img_with_cur_tag < min_images:
+
+            if num_img_with_cur_tag < self.min_images:
+                # Pick another tag
                 tag_a = random.choice(self.tags_list)
+
+            else:
+                try:
+                    # Select anchor image as a random image containing the anchor tag
+                    img_a_id = random.choice(img_with_cur_tag)
+                    img_a_idx = self.img_ids2idx_map[img_a_id]
+                except:
+                    # Error geting image id (not in loaded embeddings)
+                    tries += 1
+                    if tries > 2*num_img_with_cur_tag:
+                        print("Tries limit reached")
+                        tag_a = random.choice(self.tags_list)
+                        tries = 0
+                    continue
+                break
+
         tags[:] = self.__getwordembedding__(tag_a)
 
-        # Select anchor image as a random image containing the anchor tag
-        img_a_id = random.choice(img_with_cur_tag)
-        img_a_idx = self.img_ids2idx_map[img_a_id]
 
         try:
             images[:,:] = self.img_embeddings[img_a_id]
         except:
-            print("Couldn't find img embedding for image: " + str(img_a_id) + ". Using 0s. " + str(idx))
+            print("Couldn't find img embedding for image: " + str(img_a_id) + ". Using 0s. ")
             images[:, :] = np.zeros(300, dtype=np.float32)
 
         latitudes[:] = self.latitudes[img_a_idx]

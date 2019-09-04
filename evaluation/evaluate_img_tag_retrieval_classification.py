@@ -14,7 +14,7 @@ import json
 import numpy as np
 
 dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc_epoch_5_ValLoss_0.02'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets6NegByTag_MCLL_GN_TAGIMGL2_EML2_lr0_02_LocZeros_epoch_6_ValLoss_0.04'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 top_img_per_tag_path = dataset + 'results/' + model_name + '/tags_top_img.json'
 
@@ -22,7 +22,7 @@ out_freq_file = dataset + '/precisions_by_freqs/' + model_name + '.json'
 precisions_by_freqs = {}
 
 precision_k = 10  # Compute precision at k
-save_img = True  # Save some random image retrieval results
+save_img = False  # Save some random image retrieval results
 
 print("Loading tag list ...")
 tags_file = '../../../datasets/YFCC100M/vocab/vocab_words_100k.txt'

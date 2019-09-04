@@ -12,13 +12,13 @@ import json
 import numpy as np
 
 dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc_2ndTraining_epoch_228_ValLoss_0.015.pth'
+model_name = 'YFCC_MCLL_2ndtraining_epoch_5_ValLoss_6.55.pth'
 model_name = model_name.replace('.pth', '')
 print(model_name)
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 results_path = dataset + 'results/' + model_name + '/images_test.json'
 accuracy_k = 10 # Compute accuracy at k (will also compute it at 1)
-save_img = False # Save some random image tagging results
+save_img = True # Save some random image tagging results
 
 print("Loading tag list ...")
 tags_list = []
@@ -53,17 +53,29 @@ for i, (img_id, img_result) in enumerate(results.items()):
         total_accuracy_at_1 += 1
     # Compute Accuracy at k
     aux = []
+    correct = False
     for cur_img_tag in cur_img_tags:
         aux.append(tags_list[cur_img_tag])
         if tags_list[cur_img_tag] in test_images_tags[img_id]:
             total_accuracy_at_k += 1
+            correct = True
             break
-    # print(aux)
 
-
-    # print("Result")
-    # print(aux)
-    # print(test_images_tags[img_id])
+    # Save img
+    if save_img: # and correct: # and random.randint(0,10) < 1:
+        # print("Saving")
+        img_id = str(img_id)
+        if not os.path.isdir(dataset + '/tagging_results/' + model_name + '/' + img_id + '/'):
+            os.makedirs(dataset + '/tagging_results/' + model_name + '/' + img_id + '/')
+        copyfile('../../../datasets/YFCC100M/test_img/' + img_id + '.jpg', dataset + '/tagging_results/' + model_name + '/' + img_id + '/' + img_id + '.jpg')
+        # Save txt file with gt and predicted tags
+        with open(dataset + '/tagging_results/' + model_name + '/' + img_id + '/tags.txt','w') as outfile:
+            outfile.write('GT_tags\n')
+            for tag in test_images_tags[int(img_id)]:
+                outfile.write(tag + ' ')
+            outfile.write('\nPredicted_tags\n')
+            for idx in cur_img_tags:
+                outfile.write(tags_list[idx] + ' ')
 
 
 

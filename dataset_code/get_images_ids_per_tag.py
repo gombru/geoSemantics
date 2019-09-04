@@ -1,7 +1,7 @@
 import json
 
 anns_file = '../../../datasets/YFCC100M/splits/train_filtered.txt'
-out_file = '../../../datasets/YFCC100M/anns/images_per_tag.json'
+out_file = '../../../datasets/YFCC100M/splits/images_per_tag_train_filtered.json'
 
 tags_img_ids = {}
 
@@ -18,7 +18,7 @@ for line in open(anns_file):
     tags = data[1].split(',')
 
     for tag in tags:
-        tags_img_ids[tag] = int(data[0])
+        tags_img_ids[tag].append(int(data[0]))
 
     if c % 1000 == 0: print(c)
 

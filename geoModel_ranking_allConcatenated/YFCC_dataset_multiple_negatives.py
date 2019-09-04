@@ -6,6 +6,7 @@ import json
 import random
 import model
 import numpy as np
+import math
 
 
 class YFCC_Dataset(Dataset):
@@ -15,15 +16,24 @@ class YFCC_Dataset(Dataset):
         self.split = split
         self.img_backbone_model = img_backbone_model
         self.num_negatives = 6  # Number of negatives per anchor
+        self.distance_thresholds = [2500, 750, 200, 25, 1]
+        self.current_threshold = 1
 
         if 'train' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/train_filtered.txt'
+            images_per_tag_file = '../../../datasets/YFCC100M/' + 'splits/images_per_tag_train_filtered.json'
             # self.num_elements = 1024 * 50
         elif 'val' in self.split:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/val.txt'
+            images_per_tag_file = '../../../datasets/YFCC100M/' + 'splits/images_per_tag_val.json'
             # self.num_elements = 1024 * 5
         else:
             self.img_embeddings_path = self.root_dir + 'img_embeddings_single/' + self.img_backbone_model + '/test.txt'
+            images_per_tag_file = '../../../datasets/YFCC100M/' + 'splits/images_per_tag_test.json'
+
+        # Load img ids per tag
+        print("Loading img ids per tag ...")
+        self.images_per_tag = json.load(open(images_per_tag_file))
 
         # Load GenSim Word2Vec model
         print("Loading textual model ...")
@@ -44,9 +54,12 @@ class YFCC_Dataset(Dataset):
         # Initialize containers
         self.img_ids = np.zeros(self.num_elements, dtype=np.uint64)
         self.tags = []
+        self.latitudes_or = np.zeros(self.num_elements, dtype=np.float32)
+        self.longitudes_or = np.zeros(self.num_elements, dtype=np.float32)
         self.latitudes = np.zeros(self.num_elements, dtype=np.float32)
         self.longitudes = np.zeros(self.num_elements, dtype=np.float32)
         self.img_embeddings = {}
+        self.img_ids2idx_map = {}
 
         # Read data
         print("Reading split data ...")
@@ -57,11 +70,18 @@ class YFCC_Dataset(Dataset):
             self.img_ids[i] = int(data[0])
             tags_array = data[1].split(',')
             self.tags.append(tags_array)
+
+            self.latitudes_or[i] = float(data[4])
+            self.longitudes_or[i] = float(data[5])
+
             self.latitudes[i] = float(data[4])
             self.longitudes[i] = float(data[5])
             # Coordinates normalization
             self.latitudes[i] = (self.latitudes[i] + 90) / 180
             self.longitudes[i] = (self.longitudes[i] + 180) / 360
+
+            self.img_ids2idx_map[int(data[0])] = i
+
 
         print("Data read. Set size: " + str(len(self.tags)))
 
@@ -90,7 +110,20 @@ class YFCC_Dataset(Dataset):
         tag_embedding = np.asarray(self.text_model[tag], dtype=np.float32)
         return tag_embedding
 
-    def __get_random_negative_triplet__(self, idx, img_n, tag_n, lat_n, lon_n, tag_str):
+    def __getdistanceFast__(self, lat1, lon1, lat2, lon2):
+        deglen = 110.25
+        x = lat1 - lat2
+        y = (lon1 - lon2)*math.cos(lat2)
+        return deglen*math.sqrt(x*x + y*y)
+
+    def __getItemNotSharingTag__(self, idx, tag_str):
+        while True:
+            img_n_index = random.randint(0, self.num_elements - 1)
+            if img_n_index != idx and tag_str not in self.tags[img_n_index]:
+                break
+        return img_n_index
+
+    def __get_random_negative_triplet__(self, img_a_idx, img_n, tag_n, lat_n, lon_n, tag_str):
 
         # Select randomly the element to change
 
@@ -100,7 +133,7 @@ class YFCC_Dataset(Dataset):
         if element_picker == 0:  # Change image
             while True:
                 negative_img_idx = random.randint(0, self.num_elements - 1)
-                if negative_img_idx != idx and tag_str not in self.tags[negative_img_idx]:
+                if negative_img_idx != img_a_idx and tag_str not in self.tags[negative_img_idx]:
                     break
                 negative_img_idx = random.randint(0, self.num_elements - 1)
             try:
@@ -113,17 +146,50 @@ class YFCC_Dataset(Dataset):
         elif element_picker == 1:  # Change tag
             while True:  # Check that image does not have the randlomly selected tag
                 cur_tag_neg = random.choice(self.tags_list)
-                if cur_tag_neg not in self.tags[idx]:
+                if cur_tag_neg not in self.tags[img_a_idx]:
                     break
             tag_n = self.__getwordembedding__(cur_tag_neg)
 
-        # TODO: Here I should check that the selected location is farer than a TH
-        else:  # Change location
-            negative_location_idx = random.randint(0, self.num_elements - 1)
-            lat_n = self.latitudes[negative_location_idx]
-            lon_n = self.longitudes[negative_location_idx]
+        # TODO Change the location by a random (existing one) further away than a threshold
+        elif element_picker == 3:  # Change location by a random one further away than a threshold
+            lat_a_or = self.latitudes_or[img_a_idx]
+            lon_a_or = self.longitudes_or[img_a_idx]
+            while True:
+                negative_location_idx = random.randint(0, self.num_elements - 1)
+                lat_n_or = self.latitudes_or[negative_location_idx]
+                lon_n_or = self.longitudes_or[negative_location_idx]
+                # Check distance is further away than a threshold
+                locations_distance = self.__getdistanceFast__(lat_a_or, lon_a_or, lat_n_or, lon_n_or)
+                if locations_distance > self.distance_thresholds[self.current_threshold]:
+                    lat_n = self.latitudes[negative_location_idx]
+                    lon_n = self.longitudes[negative_location_idx]
+                    break
 
-        # TODO: I should also create hard triplets with a negative image sharing a tag but with a different location.
+        # TODO: Create hard triplets replacing the image with another sharing the tag but with a different location
+        else:
+            lat_a_or = self.latitudes_or[img_a_idx]
+            lon_a_or = self.longitudes_or[img_a_idx]
+            img_with_cur_tag = self.images_per_tag[tag_str]
+            distances_checked = 0
+            while True:
+                img_n_index = self.img_ids2idx_map[random.choice(img_with_cur_tag)]
+                if img_n_index == img_a_idx:
+                    continue
+                distances_checked += 1
+                lat_n_or = self.latitudes_or[img_n_index]
+                lon_n_or = self.longitudes_or[img_n_index]
+                locations_distance = self.__getdistanceFast__(lat_a_or, lon_a_or, lat_n_or, lon_n_or)
+                if locations_distance > self.distance_thresholds[self.current_threshold]:
+                    break
+                if distances_checked > 20:
+                    img_n_index = self.__getItemNotSharingTag__(img_a_idx, tag_str)
+                    break
+            try:
+                img_n = self.img_embeddings[self.img_ids[img_n_index]]
+            except:
+                print("Couldn't find img embedding for negative image: " + str(
+                    self.img_ids[img_n_index]) + ". Using 0s.")
+                img_n = np.zeros(300, dtype=np.float32)
 
         return img_n, tag_n, lat_n, lon_n
 

@@ -40,7 +40,7 @@ granularities_str = ['street level (1km)', 'city (25km)', 'region (200km)', 'cou
 
 dataset = '../../../hd/datasets/YFCC100M/'
 queries_file = dataset + 'geosensitive_queries/queries.txt'
-model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_smallTrain_lr0_02_LocZeros_2ndTraining_epoch_2_ValLoss_0.02'
+model_name = 'YFCC_MCLL_2ndtraining_epoch_5_ValLoss_6.55'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
 top_img_per_tag_path = dataset + 'results/' + model_name + '/tags_top_img.json'
 precision_k = 10  # Compute precision at k
@@ -102,17 +102,13 @@ for i, cur_tag in enumerate(query_tags):
         ignored+=1
         continue
 
-    try:
-        top_img_curTag = top_img_per_tag[str(tags_list.index(cur_tag))]
-    except:
-        ignored+=1
-        continue
-
     used+=1
 
-    if i % 5000 == 0 and used > 0:
-        print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*precisions[0]/used))
-        print(precisions/used)
+    if i % 5000 == 0 and i > 0:
+        print(str(i) + ':  Cur P at ' + str(precision_k) + " --> " + str(100*precisions[0]/i))
+        print(precisions)
+
+    top_img_curTag = top_img_per_tag[str(tags_list.index(cur_tag))]
 
     # Compute Precision at k
     correct = False

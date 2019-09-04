@@ -23,41 +23,43 @@ class YFCC_Dataset(Dataset):
             self.text_model[k] = v / np.linalg.norm(v, 2)
 
         print("Loading tag|loc queries ...")
-        queries_file = dataset_folder + 'geosensitive_queries/queries.txt'
+        queries_file = self.root_dir + 'geosensitive_queries/queries.txt'
         self.query_tags_names = []
         self.query_lats_str = []
         self.query_lons_str = []
 
-        query_tags_tensor = np.zeros([num_query_pairs, 300], dtype=np.float32)
-        latitudes_tensor = np.zeros([num_query_pairs, 1], dtype=np.float32)
-        longitudes_tensor = np.zeros([num_query_pairs, 1], dtype=np.float32)
+        num_query_pairs = 500000
+
+        self.query_tags_tensor = np.zeros([num_query_pairs, 300], dtype=np.float32)
+        self.latitudes_tensor = np.zeros([num_query_pairs, 1], dtype=np.float32)
+        self.longitudes_tensor = np.zeros([num_query_pairs, 1], dtype=np.float32)
 
         for i, line in enumerate(open(queries_file, 'r')):
             d = line.split(',')
-            query_tags_names.append(d[0])
+            self.query_tags_names.append(d[0])
             lat = (float(d[1]) + 90) / 180
             lon = (float(d[2]) + 180) / 360
-            query_lats_str.append(d[1])
-            query_lons_str.append(d[2].replace('\n', ''))
-            query_tags_tensor[i, :] = np.asarray(text_model[d[0]], dtype=np.float32)
-            latitudes_tensor[i, :] = lat
-            longitudes_tensor[i, :] = lon
+            self.query_lats_str.append(d[1])
+            self.query_lons_str.append(d[2].replace('\n', ''))
+            self.query_tags_tensor[i, :] = np.asarray(self.text_model[d[0]], dtype=np.float32)
+            self.latitudes_tensor[i, :] = lat
+            self.longitudes_tensor[i, :] = lon
 
     def __len__(self):
         return len(self.query_tags_names)
 
     def __getitem__(self, idx):
 
-        tag = query_tags_tensor[idx, :]
+        tag = self.query_tags_tensor[idx, :]
         tag = torch.from_numpy(tag)
-        tag_str = query_tags_names[idx]
+        tag_str = str(self.query_tags_names[idx])
 
-        lat = latitudes_tensor[idx, :]
+        lat = self.latitudes_tensor[idx, :]
         lat = torch.from_numpy(lat)
-        lat_str = query_lats_str[idx]
+        lat_str = str(self.query_lats_str[idx])
 
-        lon = longitudes_tensor[idx, :]
+        lon = self.longitudes_tensor[idx, :]
         lon = torch.from_numpy(lon)
-        lon_str = query_lons_str[idx]
+        lon_str = str(self.query_lons_str[idx])
 
         return tag, lat, lon, tag_str, lat_str, lon_str

@@ -14,7 +14,7 @@ class YFCC_Dataset(Dataset):
         self.root_dir = root_dir
         # Load GenSim Word2Vec model
         print("Loading textual model ...")
-        text_model_path = self.root_dir + '/vocab/vocab_100k.json'
+        text_model_path = '../../../datasets/YFCC100M/vocab/vocab_100k.json'
         self.text_model = json.load(open(text_model_path))
         print("Vocabulary size: " + str(len(self.text_model)))
         print("Normalizing vocab")
@@ -33,7 +33,7 @@ class YFCC_Dataset(Dataset):
         return len(self.tags_list)
 
     def __getitem__(self, idx):
-        print(str(idx) + ": " + str(self.tags_list[idx]))
+        # print(str(idx) + ": " + str(self.tags_list[idx]))
         tag = self.text_model[self.tags_list[idx]]
         tag = torch.from_numpy(tag)
         return tag

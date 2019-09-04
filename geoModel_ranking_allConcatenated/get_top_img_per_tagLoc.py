@@ -24,7 +24,7 @@ ImgSize = 224
 num_query_pairs = 1000 # 100000 # 500000
 print("Using num query paris: " + str(num_query_pairs))
 
-model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc_2ndTraining_epoch_228_ValLoss_0.015.pth'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets6NegbyTag_MCLL_GN_TAGIMGL2_EML2_lr0_0005_withLoc_epoch_7_ValLoss_0.027.pth'
 model_name = model_name.replace('.pth','')
 
 gpus = [1]

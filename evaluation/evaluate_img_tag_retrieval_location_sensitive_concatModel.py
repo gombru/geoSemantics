@@ -38,9 +38,9 @@ def check_location(lat1,lon1,lat2,lon2):
     return results
 
 dataset = '../../../hd/datasets/YFCC100M/'
-model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc_epoch_5_ValLoss_0.02'
+model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc_2ndTraining_epoch_228_ValLoss_0.015'
 test_split_path = '../../../datasets/YFCC100M/splits/test.txt'
-top_img_per_tag_path = dataset + 'results/' + model_name + '/tagLoc_top_img.json'
+top_img_per_tag_path = dataset + 'results/' + model_name + '/tagLoc_top_img_imgLocBatch.json'
 
 precision_k = 10  # Compute precision at k
 save_img = False  # Save some random image retrieval results
@@ -89,6 +89,7 @@ used = 0
 for i, (pair_info, cur_tag_top_img) in enumerate(top_img_per_tag.items()):
 
     d = pair_info.split(',')
+    # print(d)
     cur_tag = d[0]
     cur_lat = float(d[1]) # * 180 - 90 # + 90) / 180
     cur_lon = float(d[2]) # * 360 -  180 #  180) / 360

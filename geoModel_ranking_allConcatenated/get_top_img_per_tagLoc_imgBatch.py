@@ -27,8 +27,8 @@ print("Using num query paris: " + str(num_query_pairs))
 model_name = 'geoModel_ranking_allConcatenated_randomTriplets6Neg_MCLL_GN_TAGIMGL2_EML2_lr0_005_withLoc_2ndTraining_epoch_228_ValLoss_0.015.pth'
 model_name = model_name.replace('.pth','')
 
-gpus = [1]
-gpu = 1
+gpus = [2]
+gpu = 2
 
 if not os.path.exists(dataset_folder + 'results/' + model_name):
     os.makedirs(dataset_folder + 'results/' + model_name)
@@ -37,7 +37,7 @@ output_file_path = dataset_folder + 'results/' + model_name + '/tagLoc_top_img_i
 output_file = open(output_file_path, "w")
 
 state_dict = torch.load(dataset_folder + '/models/saved/' + model_name + '.pth.tar',
-                        map_location={'cuda:0':'cuda:1', 'cuda:2':'cuda:1', 'cuda:3':'cuda:1'})
+                        map_location={'cuda:0':'cuda:2', 'cuda:1':'cuda:2', 'cuda:3':'cuda:2'})
 
 
 model_test = model.Model_Test_Retrieval_ImgBatch()
@@ -64,25 +64,6 @@ print("Img embeddings loaded: " + str(len(img_ids)))
 imgs_tensor = torch.from_numpy(imgs_tensor).cuda(gpu)
 
 
-print("Loading tag|loc queries ...")
-queries_file = dataset_folder + 'geosensitive_queries/queries.txt'
-query_tags_names = []
-query_lats_str = []
-query_lons_str = []
-for i,line in enumerate(open(queries_file, 'r')):
-    if i == num_query_pairs:
-        print("Stopping at num_queries: " + str(i))
-        break
-    d = line.split(',')
-    query_tags_names.append(d[0])
-    lat = (float(d[1]) + 90) / 180
-    lon = (float(d[2]) + 180) / 360
-    query_lats_str.append(d[1])
-    query_lons_str.append(d[2].replace('\n',''))
-    query_tags_tensor[i,:] = np.asarray(text_model[d[0]], dtype=np.float32)
-    latitudes_tensor[i,:] = lat
-    longitudes_tensor[i,:] = lon
-
 results = {}
 with torch.no_grad():
     model_test.eval()
@@ -98,9 +79,8 @@ with torch.no_grad():
         top_img_ids = []
         for img_idx in top_img_indices:
             top_img_ids.append(img_ids[img_idx])
-
-        key = tag_str + ',' + str(lat_or) + ',' + str(lon_or)
-        results[i] = top_img_ids
+        key = tag_str[0] + ',' + str(lat_or[0]) + ',' + str(lon_or[0])
+        results[key] = top_img_ids
 
         if i % 1 == 0:
             end = time.time()
